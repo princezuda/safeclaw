@@ -1,0 +1,25 @@
+# Custom Intent Patterns
+# Add your own commands and patterns here
+
+intents:
+  # Example: Custom deploy command
+  # deploy:
+  #   keywords: ["deploy", "release", "ship"]
+  #   patterns:
+  #     - "deploy to (production|staging)"
+  #   examples:
+  #     - "deploy to production"
+  #   action: "webhook"
+  #   params:
+  #     webhook_name: "deploy"
+
+  # Example: Custom backup command
+  # backup:
+  #   keywords: ["backup", "archive"]
+  #   patterns:
+  #     - "backup (.+)"
+  #   examples:
+  #     - "backup my documents"
+  #   action: "shell"
+  #   params:
+  #     command_template: "tar -czf backup.tar.gz {path}"

@@ -1,0 +1,43 @@
+# SafeClaw Configuration
+
+safeclaw:
+  name: "SafeClaw"
+  language: "en"
+  timezone: "UTC"
+
+# Channels
+channels:
+  cli:
+    enabled: true
+  webhook:
+    enabled: true
+    port: 8765
+    host: "0.0.0.0"
+  telegram:
+    enabled: false
+    token: ""  # Get from @BotFather
+    allowed_users: []  # List of user IDs, empty = allow all
+
+# Actions
+actions:
+  shell:
+    enabled: true
+    sandboxed: true
+    timeout: 30
+  files:
+    enabled: true
+    allowed_paths:
+      - "~"
+      - "/tmp"
+  browser:
+    enabled: false
+
+# Memory
+memory:
+  max_history: 1000
+  retention_days: 365
+
+# Optional API keys (for enhanced features)
+apis:
+  openweathermap: ""  # For weather in briefings
+  newsapi: ""  # For news in briefings
