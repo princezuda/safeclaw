@@ -15,7 +15,6 @@ SafeClaw is an open-source alternative to cloud-based AI assistants that runs en
 - **Rule-based command parsing** - Keyword matching, regex, fuzzy search
 - **Extractive summarization** - Uses [sumy](https://github.com/miso-belica/sumy) (LSA, LexRank, TextRank)
 - **Pattern matching** - dateparser for natural language dates
-- **Optional AI fallback** - Connect to Ollama or local LLMs if desired
 
 ### 📡 Multi-Channel
 - **CLI** - Interactive command line interface
