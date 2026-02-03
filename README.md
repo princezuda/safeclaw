@@ -217,7 +217,59 @@ actions:
     enabled: true
     allowed_paths:
       - "~"
+  weather:
+    enabled: true
+    api_key: "your-openweathermap-key"  # Free at openweathermap.org
+    units: "imperial"  # or "metric"
+    default_location: "New York"
 ```
+
+### Weather API (Free)
+
+SafeClaw can fetch weather using the free OpenWeatherMap API:
+
+1. **Get a free API key** at [openweathermap.org/api](https://openweathermap.org/api)
+   - Free tier: 1,000 calls/day (plenty for personal use)
+   - No credit card required
+
+2. **Add to your config** (`~/.safeclaw/config.yaml`):
+```yaml
+actions:
+  weather:
+    enabled: true
+    api_key: "your-api-key-here"
+    units: "imperial"  # or "metric" for Celsius
+    default_location: "Your City"
+```
+
+3. **Use it:**
+```
+> weather
+> weather in Paris
+> what's the weather in Tokyo
+```
+
+### Command Chaining
+
+Chain multiple commands together using pipes or sequences:
+
+**Pipes** - Pass output from one command to the next:
+```
+> crawl https://example.com | summarize
+> crawl site.com -> summarize it -> email to me
+```
+
+**Sequences** - Run commands independently:
+```
+> check email; remind me to reply
+> news and then weather
+> crawl site.com then summarize
+```
+
+Supported chain operators:
+- `|` or `->` - Pipe (passes output)
+- `;` - Sequence (independent)
+- `and then` / `then` - Natural language sequence
 
 ## Architecture
 
