@@ -6,18 +6,147 @@ No GenAI needed! Uses:
 - Regex patterns
 - Slot filling (dates, times, entities)
 - Fuzzy matching for typo tolerance
+- User-learned patterns from corrections
 """
 
 import re
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 from datetime import datetime
 
 import dateparser
 from rapidfuzz import fuzz, process
 
+if TYPE_CHECKING:
+    from safeclaw.core.memory import Memory
+
 logger = logging.getLogger(__name__)
+
+
+# Common phrase variations that map to core intents
+# These cover natural language that users might type day-one
+PHRASE_VARIATIONS = {
+    "reminder": [
+        "don't let me forget",
+        "make sure i",
+        "ping me",
+        "tell me to",
+        "remind me about",
+        "i need to remember",
+        "can you remind",
+        "heads up about",
+        "don't forget to",
+        "note to self",
+    ],
+    "weather": [
+        "how's the weather",
+        "what's it like outside",
+        "is it raining",
+        "should i bring umbrella",
+        "do i need a jacket",
+        "temperature outside",
+        "how hot is it",
+        "how cold is it",
+        "weather check",
+    ],
+    "crawl": [
+        "what links are on",
+        "show me links from",
+        "find urls on",
+        "list links on",
+        "what pages link to",
+        "scan website",
+        "spider",
+        "follow links",
+    ],
+    "email": [
+        "any new mail",
+        "new messages",
+        "did i get mail",
+        "any emails",
+        "message from",
+        "write email",
+        "compose email",
+        "mail to",
+    ],
+    "calendar": [
+        "what's happening",
+        "am i busy",
+        "do i have anything",
+        "free time",
+        "book a meeting",
+        "set up meeting",
+        "schedule with",
+        "my day",
+        "today's events",
+    ],
+    "news": [
+        "what's new",
+        "latest news",
+        "what's going on",
+        "current events",
+        "top stories",
+        "breaking news",
+        "recent news",
+    ],
+    "briefing": [
+        "catch me up",
+        "what's happening today",
+        "daily digest",
+        "morning summary",
+        "start my day",
+        "anything i should know",
+        "overview for today",
+    ],
+    "help": [
+        "what do you do",
+        "how does this work",
+        "show options",
+        "list features",
+        "what are my options",
+        "menu",
+        "capabilities",
+    ],
+    "summarize": [
+        "sum up",
+        "quick summary",
+        "give me the gist",
+        "main points",
+        "key takeaways",
+        "in brief",
+        "cliff notes",
+        "the short version",
+    ],
+    "shell": [
+        "terminal",
+        "cmd",
+        "cli",
+        "bash",
+        "run this",
+        "exec",
+    ],
+    "smarthome": [
+        "switch on",
+        "switch off",
+        "lights on",
+        "lights off",
+        "make it brighter",
+        "make it darker",
+        "adjust lights",
+    ],
+}
+
+
+# Patterns for detecting command chains
+# Order matters - more specific patterns first
+CHAIN_PATTERNS = [
+    (r'\s*\|\s*', 'pipe'),              # Unix-style pipe: "crawl url | summarize"
+    (r'\s*->\s*', 'pipe'),              # Arrow pipe: "crawl url -> summarize"
+    (r'\s+and\s+then\s+', 'sequence'),  # "crawl url and then summarize" (must be before "then")
+    (r'\s+then\s+', 'sequence'),        # "crawl url then summarize"
+    (r'\s*;\s*', 'sequence'),           # Semicolon: "crawl url; summarize"
+]
 
 
 @dataclass
@@ -28,6 +157,16 @@ class ParsedCommand:
     confidence: float = 0.0
     params: dict[str, Any] = field(default_factory=dict)
     entities: dict[str, Any] = field(default_factory=dict)
+    # For command chaining
+    chain_type: Optional[str] = None  # 'pipe' or 'sequence' or None
+    use_previous_output: bool = False  # True if this command should receive previous output
+
+
+@dataclass
+class CommandChain:
+    """A chain of commands to execute in sequence."""
+    commands: list[ParsedCommand]
+    chain_type: str = "sequence"  # 'pipe' passes output, 'sequence' runs independently
 
 
 @dataclass
@@ -46,10 +185,13 @@ class CommandParser:
 
     Parses user input into structured commands without any AI/ML.
     Uses keyword matching, regex, and dateparser for slot filling.
+    Supports user-learned patterns from corrections.
     """
 
-    def __init__(self):
+    def __init__(self, memory: Optional["Memory"] = None):
         self.intents: dict[str, IntentPattern] = {}
+        self.memory = memory
+        self._learned_patterns_cache: dict[str, list[dict]] = {}
         self._setup_default_intents()
 
     def _setup_default_intents(self) -> None:
@@ -363,11 +505,15 @@ class CommandParser:
         self.intents[pattern.intent] = pattern
         logger.debug(f"Registered intent: {pattern.intent}")
 
-    def parse(self, text: str) -> ParsedCommand:
+    def parse(self, text: str, user_id: Optional[str] = None) -> ParsedCommand:
         """
         Parse user input into a structured command.
 
         Returns ParsedCommand with intent, confidence, and extracted params.
+
+        Args:
+            text: User input to parse
+            user_id: Optional user ID for checking learned patterns
         """
         text = text.strip()
         result = ParsedCommand(raw_text=text)
@@ -378,7 +524,29 @@ class CommandParser:
         # Normalize text
         normalized = text.lower()
 
-        # Try keyword matching first
+        # 1. Check learned patterns first (user corrections have highest priority)
+        if user_id and user_id in self._learned_patterns_cache:
+            learned_match = self._match_learned_patterns(normalized, user_id)
+            if learned_match:
+                result.intent = learned_match["intent"]
+                result.confidence = 0.98  # Very high - user explicitly corrected this
+                result.params = learned_match.get("params") or {}
+                result.entities = self._extract_entities(text)
+                logger.debug(f"Matched learned pattern: '{text}' -> {result.intent}")
+                return result
+
+        # 2. Check phrase variations (fuzzy match against common phrases)
+        phrase_match = self._match_phrase_variations(normalized)
+        if phrase_match and phrase_match[1] >= 0.85:
+            result.intent = phrase_match[0]
+            result.confidence = phrase_match[1]
+
+            intent_pattern = self.intents[result.intent]
+            result.params = self._extract_params(text, intent_pattern)
+            result.entities = self._extract_entities(text)
+            return result
+
+        # 3. Fall back to keyword/pattern matching
         best_match = self._match_keywords(normalized)
 
         if best_match:
@@ -491,3 +659,214 @@ class CommandParser:
         if intent in self.intents:
             return self.intents[intent].examples
         return []
+
+    def _match_phrase_variations(self, text: str) -> Optional[tuple[str, float]]:
+        """
+        Match text against common phrase variations using fuzzy matching.
+
+        This provides day-one natural language understanding without training.
+        """
+        best_intent = None
+        best_score = 0.0
+
+        for intent, phrases in PHRASE_VARIATIONS.items():
+            if intent not in self.intents:
+                continue
+
+            for phrase in phrases:
+                # Check if phrase is contained in text
+                if phrase in text:
+                    score = 0.92
+                    if score > best_score:
+                        best_score = score
+                        best_intent = intent
+                    continue
+
+                # Fuzzy match - check if any part of text matches phrase
+                # Use partial_ratio for substring matching
+                ratio = fuzz.partial_ratio(phrase, text) / 100.0
+                if ratio > 0.85 and ratio > best_score:
+                    best_score = ratio
+                    best_intent = intent
+
+        if best_intent and best_score >= 0.85:
+            return (best_intent, best_score)
+
+        return None
+
+    def _match_learned_patterns(
+        self, text: str, user_id: str
+    ) -> Optional[dict[str, Any]]:
+        """
+        Match text against user's learned patterns using fuzzy matching.
+
+        Returns the best matching pattern if found with high confidence.
+        """
+        if user_id not in self._learned_patterns_cache:
+            return None
+
+        patterns = self._learned_patterns_cache[user_id]
+        if not patterns:
+            return None
+
+        best_match = None
+        best_score = 0.0
+
+        for pattern in patterns:
+            phrase = pattern["phrase"]
+
+            # Exact match (normalized)
+            if text == phrase:
+                return pattern
+
+            # Fuzzy match - higher threshold for learned patterns
+            ratio = fuzz.ratio(phrase, text) / 100.0
+            if ratio > 0.90 and ratio > best_score:
+                best_score = ratio
+                best_match = pattern
+
+        return best_match
+
+    async def load_user_patterns(self, user_id: str) -> None:
+        """
+        Load learned patterns for a user from memory.
+
+        Call this when a user session starts to enable learned pattern matching.
+        """
+        if not self.memory:
+            return
+
+        patterns = await self.memory.get_user_patterns(user_id)
+        self._learned_patterns_cache[user_id] = patterns
+        logger.debug(f"Loaded {len(patterns)} learned patterns for user {user_id}")
+
+    async def learn_correction(
+        self,
+        user_id: str,
+        phrase: str,
+        correct_intent: str,
+        params: Optional[dict] = None,
+    ) -> None:
+        """
+        Learn a correction from user feedback.
+
+        When a user says "I meant X" or corrects a misunderstood command,
+        store the mapping so future similar phrases match correctly.
+
+        Args:
+            user_id: User who made the correction
+            phrase: The original phrase that was misunderstood
+            correct_intent: The intent the user actually wanted
+            params: Optional parameters for the intent
+        """
+        if not self.memory:
+            logger.warning("Cannot learn correction: no memory configured")
+            return
+
+        # Store in database
+        await self.memory.learn_pattern(user_id, phrase, correct_intent, params)
+
+        # Update cache
+        if user_id not in self._learned_patterns_cache:
+            self._learned_patterns_cache[user_id] = []
+
+        # Check if already in cache and update, or add new
+        normalized = phrase.lower().strip()
+        for existing in self._learned_patterns_cache[user_id]:
+            if existing["phrase"] == normalized:
+                existing["intent"] = correct_intent
+                existing["params"] = params
+                existing["use_count"] = existing.get("use_count", 0) + 1
+                logger.info(f"Updated learned pattern: '{phrase}' -> {correct_intent}")
+                return
+
+        # Add new pattern to cache
+        self._learned_patterns_cache[user_id].append({
+            "phrase": normalized,
+            "intent": correct_intent,
+            "params": params,
+            "use_count": 1,
+        })
+        logger.info(f"Learned new pattern: '{phrase}' -> {correct_intent}")
+
+    def _detect_chain(self, text: str) -> Optional[tuple[str, str]]:
+        """
+        Detect if text contains a command chain pattern.
+
+        Returns tuple of (pattern, chain_type) or None if no chain detected.
+        """
+        for pattern, chain_type in CHAIN_PATTERNS:
+            if re.search(pattern, text, re.IGNORECASE):
+                return (pattern, chain_type)
+        return None
+
+    def _split_chain(self, text: str) -> tuple[list[str], str]:
+        """
+        Split text into chain segments.
+
+        Returns tuple of (segments, chain_type).
+        """
+        # Try each pattern in order
+        for pattern, chain_type in CHAIN_PATTERNS:
+            parts = re.split(pattern, text, flags=re.IGNORECASE)
+            if len(parts) > 1:
+                # Clean up parts and filter empty ones
+                segments = [p.strip() for p in parts if p.strip()]
+                if len(segments) > 1:
+                    return (segments, chain_type)
+
+        # No chain found - return single segment
+        return ([text], "none")
+
+    def parse_chain(
+        self, text: str, user_id: Optional[str] = None
+    ) -> CommandChain:
+        """
+        Parse a potentially chained command.
+
+        Supports:
+        - Pipes: "crawl url | summarize" - passes output to next command
+        - Arrows: "crawl url -> summarize" - same as pipe
+        - Sequence: "check email; remind me to reply" - runs independently
+        - Natural: "crawl url and then summarize it" - contextual chaining
+
+        Args:
+            text: User input that may contain multiple chained commands
+            user_id: Optional user ID for learned pattern matching
+
+        Returns:
+            CommandChain with list of ParsedCommands
+        """
+        text = text.strip()
+
+        # Split into segments
+        segments, chain_type = self._split_chain(text)
+
+        if len(segments) == 1:
+            # Single command - no chaining
+            cmd = self.parse(text, user_id)
+            return CommandChain(commands=[cmd], chain_type="none")
+
+        # Parse each segment
+        commands: list[ParsedCommand] = []
+        for i, segment in enumerate(segments):
+            cmd = self.parse(segment, user_id)
+
+            # Mark chain info
+            cmd.chain_type = chain_type if i < len(segments) - 1 else None
+
+            # For pipes, subsequent commands use previous output
+            if chain_type == "pipe" and i > 0:
+                cmd.use_previous_output = True
+                # Handle implicit targets like "summarize it", "summarize that"
+                if not cmd.params.get("target") and not cmd.entities.get("urls"):
+                    cmd.params["_use_previous"] = True
+
+            commands.append(cmd)
+
+        logger.debug(f"Parsed chain with {len(commands)} commands ({chain_type})")
+        return CommandChain(commands=commands, chain_type=chain_type)
+
+    def is_chain(self, text: str) -> bool:
+        """Check if text contains a command chain."""
+        return self._detect_chain(text) is not None

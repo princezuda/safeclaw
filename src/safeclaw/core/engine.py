@@ -11,7 +11,7 @@ from typing import Any, Callable, Optional
 
 import yaml
 
-from safeclaw.core.parser import CommandParser
+from safeclaw.core.parser import CommandParser, CommandChain, ParsedCommand
 from safeclaw.core.memory import Memory
 from safeclaw.core.scheduler import Scheduler
 
@@ -106,11 +106,16 @@ class SafeClaw:
         Process an incoming message and return a response.
 
         This is the main entry point for all channels.
+        Supports command chaining with pipes (|) and sequences (;, "and then").
         """
         metadata = metadata or {}
 
+        # Check for command chains
+        if self.parser.is_chain(text):
+            return await self._handle_chain(text, channel, user_id, metadata)
+
         # Parse the command
-        parsed = self.parser.parse(text)
+        parsed = self.parser.parse(text, user_id)
         logger.debug(f"Parsed command: {parsed}")
 
         # Store in memory
@@ -141,6 +146,79 @@ class SafeClaw:
             return f"I understand you want to '{parsed.intent}', but I don't have that action configured."
 
         return "I didn't understand that command. Try 'help' to see what I can do."
+
+    async def _handle_chain(
+        self,
+        text: str,
+        channel: str,
+        user_id: str,
+        metadata: dict,
+    ) -> str:
+        """
+        Execute a chain of commands.
+
+        For pipes (|, ->): passes output from one command to the next
+        For sequences (;, "and then"): runs commands independently
+        """
+        chain = self.parser.parse_chain(text, user_id)
+        logger.info(f"Executing command chain: {len(chain.commands)} commands ({chain.chain_type})")
+
+        results: list[str] = []
+        previous_output: Optional[str] = None
+
+        for i, cmd in enumerate(chain.commands):
+            # Store each command in memory
+            await self.memory.store_message(
+                user_id=user_id,
+                channel=channel,
+                text=cmd.raw_text,
+                parsed=cmd,
+                metadata={**metadata, "chain_index": i, "chain_type": chain.chain_type},
+            )
+
+            if not cmd.intent:
+                results.append(f"[{i+1}] Could not understand: {cmd.raw_text}")
+                continue
+
+            if cmd.intent not in self.actions:
+                results.append(f"[{i+1}] Unknown action: {cmd.intent}")
+                continue
+
+            try:
+                # For piped commands, inject previous output
+                params = dict(cmd.params)
+                if chain.chain_type == "pipe" and previous_output and cmd.use_previous_output:
+                    # Add previous output as input for this command
+                    params["_previous_output"] = previous_output
+                    # If no target specified, use previous output as target
+                    if params.get("_use_previous") or not params.get("target"):
+                        params["target"] = previous_output
+
+                result = await self._execute_action(
+                    action=cmd.intent,
+                    params=params,
+                    user_id=user_id,
+                    channel=channel,
+                )
+                previous_output = result
+                results.append(result)
+
+            except Exception as e:
+                logger.error(f"Chain action {i+1} failed: {e}")
+                results.append(f"[{i+1}] Failed: {e}")
+                # For pipes, stop on error
+                if chain.chain_type == "pipe":
+                    break
+
+        # Format output based on chain type
+        if chain.chain_type == "pipe":
+            # For pipes, return only the final result
+            return results[-1] if results else "No output"
+        else:
+            # For sequences, return all results
+            if len(results) == 1:
+                return results[0]
+            return "\n\n---\n\n".join(results)
 
     async def _execute_action(
         self,

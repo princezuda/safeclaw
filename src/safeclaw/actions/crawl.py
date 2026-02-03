@@ -75,13 +75,26 @@ class CrawlAction(BaseAction):
     ) -> str:
         """Get links from a single page."""
         async with Crawler(rate_limit=self.rate_limit) as crawler:
-            links = await crawler.get_links(url, same_domain, pattern)
+            # Fetch the page content and extract links
+            result = await crawler.fetch(url)
+            links = result.links
+
+            # Filter by domain if requested
+            if same_domain:
+                from urllib.parse import urlparse
+                start_domain = urlparse(url).netloc
+                links = [l for l in links if urlparse(l).netloc == start_domain]
+
+            # Filter by pattern if provided
+            if pattern:
+                import re
+                pattern_re = re.compile(pattern)
+                links = [l for l in links if pattern_re.search(l)]
 
         if not links:
             return f"No links found on {url}"
 
-        # Cache the result
-        result = await crawler.fetch(url)
+        # Cache the result (outside context is fine - no HTTP calls)
         await engine.memory.cache_crawl(
             url=url,
             content=result.text,

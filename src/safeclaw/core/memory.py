@@ -116,6 +116,30 @@ class PreparedStatements:
         WHERE key = :key AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
     """
 
+    # User-learned patterns
+    UPSERT_PATTERN = """
+        INSERT INTO user_patterns (user_id, phrase, intent, params, use_count, updated_at)
+        VALUES (:user_id, :phrase, :intent, :params, 1, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, phrase) DO UPDATE SET
+            intent = :intent,
+            params = :params,
+            use_count = use_count + 1,
+            updated_at = CURRENT_TIMESTAMP
+    """
+
+    SELECT_USER_PATTERNS = """
+        SELECT phrase, intent, params, use_count
+        FROM user_patterns
+        WHERE user_id = :user_id
+        ORDER BY use_count DESC
+    """
+
+    SELECT_PATTERN_MATCH = """
+        SELECT intent, params, use_count
+        FROM user_patterns
+        WHERE user_id = :user_id AND phrase = :phrase
+    """
+
 
 class Memory:
     """
@@ -216,6 +240,21 @@ class Memory:
                 expires_at TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            -- User-learned patterns for natural language understanding
+            CREATE TABLE IF NOT EXISTS user_patterns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                phrase TEXT NOT NULL,
+                intent TEXT NOT NULL,
+                params TEXT,
+                use_count INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, phrase)
+            );
+            CREATE INDEX IF NOT EXISTS idx_patterns_user ON user_patterns(user_id);
+            CREATE INDEX IF NOT EXISTS idx_patterns_phrase ON user_patterns(phrase);
         """)
         await self._connection.commit()
 
@@ -526,3 +565,71 @@ class Memory:
             return json.loads(row["value"])
 
         return default
+
+    # User-learned patterns
+    async def learn_pattern(
+        self,
+        user_id: str,
+        phrase: str,
+        intent: str,
+        params: Optional[dict] = None,
+    ) -> None:
+        """
+        Learn a user's phrase-to-intent mapping.
+
+        When a user corrects a misunderstood command, store the mapping
+        so future similar phrases can be matched correctly.
+        """
+        assert self._connection is not None
+
+        await self._connection.execute(
+            PreparedStatements.UPSERT_PATTERN,
+            {
+                "user_id": user_id,
+                "phrase": phrase.lower().strip(),
+                "intent": intent,
+                "params": json.dumps(params) if params else None,
+            },
+        )
+        await self._connection.commit()
+        logger.debug(f"Learned pattern: '{phrase}' -> {intent}")
+
+    async def get_user_patterns(self, user_id: str) -> list[dict]:
+        """Get all learned patterns for a user, ordered by usage frequency."""
+        assert self._connection is not None
+
+        cursor = await self._connection.execute(
+            PreparedStatements.SELECT_USER_PATTERNS, {"user_id": user_id}
+        )
+        rows = await cursor.fetchall()
+
+        return [
+            {
+                "phrase": row["phrase"],
+                "intent": row["intent"],
+                "params": json.loads(row["params"]) if row["params"] else None,
+                "use_count": row["use_count"],
+            }
+            for row in rows
+        ]
+
+    async def match_learned_pattern(
+        self, user_id: str, phrase: str
+    ) -> Optional[dict]:
+        """Check if we have an exact learned pattern match for this phrase."""
+        assert self._connection is not None
+
+        cursor = await self._connection.execute(
+            PreparedStatements.SELECT_PATTERN_MATCH,
+            {"user_id": user_id, "phrase": phrase.lower().strip()},
+        )
+        row = await cursor.fetchone()
+
+        if row:
+            return {
+                "intent": row["intent"],
+                "params": json.loads(row["params"]) if row["params"] else None,
+                "use_count": row["use_count"],
+            }
+
+        return None
