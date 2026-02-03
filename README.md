@@ -226,11 +226,13 @@ actions:
 
 ### Weather API (Free)
 
-SafeClaw can fetch weather using the free OpenWeatherMap API:
+SafeClaw can fetch weather using the free OpenWeatherMap **Current Weather API**:
 
-1. **Get a free API key** at [openweathermap.org/api](https://openweathermap.org/api)
-   - Free tier: 1,000 calls/day (plenty for personal use)
+1. **Get a free API key** at [openweathermap.org/appid](https://openweathermap.org/appid)
+   - Sign up → Go to "API keys" tab → Copy your key
+   - **Free tier: 1,000 calls/day** (plenty for personal use)
    - No credit card required
+   - ⚠️ Note: Use "Current Weather" API (free), NOT "One Call API 3.0" (paid)
 
 2. **Add to your config** (`~/.safeclaw/config.yaml`):
 ```yaml
