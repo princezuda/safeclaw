@@ -25,9 +25,17 @@ BLOCKED_IP_RANGES = [
     ipaddress.ip_network("10.0.0.0/8"),       # Private
     ipaddress.ip_network("172.16.0.0/12"),    # Private
     ipaddress.ip_network("192.168.0.0/16"),   # Private
+    ipaddress.ip_network("192.0.0.0/24"),     # IETF Protocol Assignments
+    ipaddress.ip_network("192.0.2.0/24"),     # TEST-NET-1 (documentation)
+    ipaddress.ip_network("192.88.99.0/24"),   # 6to4 Relay Anycast
     ipaddress.ip_network("169.254.0.0/16"),   # Link-local
     ipaddress.ip_network("0.0.0.0/8"),        # Current network
     ipaddress.ip_network("100.64.0.0/10"),    # Shared address space (CGNAT)
+    ipaddress.ip_network("198.18.0.0/15"),    # Benchmarking
+    ipaddress.ip_network("198.51.100.0/24"),  # TEST-NET-2 (documentation)
+    ipaddress.ip_network("203.0.113.0/24"),   # TEST-NET-3 (documentation)
+    ipaddress.ip_network("224.0.0.0/4"),      # Multicast
+    ipaddress.ip_network("240.0.0.0/4"),      # Reserved for future use
     ipaddress.ip_network("::1/128"),          # IPv6 loopback
     ipaddress.ip_network("fc00::/7"),         # IPv6 private
     ipaddress.ip_network("fe80::/10"),        # IPv6 link-local
@@ -332,3 +340,5 @@ class Crawler:
         # Remove fragment
         parsed = urlparse(url)
         return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
+
+ 
