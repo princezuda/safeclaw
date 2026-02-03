@@ -6,7 +6,7 @@ SQLite-based with async support. No cloud required.
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
@@ -361,9 +361,7 @@ class Memory:
         """Cache crawl results."""
         assert self._connection is not None
 
-        expires_at = datetime.now().replace(
-            hour=datetime.now().hour + ttl_hours
-        )
+        expires_at = datetime.now() + timedelta(hours=ttl_hours)
 
         await self._connection.execute(
             """
@@ -406,9 +404,7 @@ class Memory:
 
         expires_at = None
         if ttl_seconds:
-            expires_at = datetime.now().replace(
-                second=datetime.now().second + ttl_seconds
-            ).isoformat()
+            expires_at = (datetime.now() + timedelta(seconds=ttl_seconds)).isoformat()
 
         await self._connection.execute(
             """

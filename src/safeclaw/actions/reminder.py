@@ -1,6 +1,6 @@
 """Reminder action."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, TYPE_CHECKING
 
 import dateparser
@@ -51,11 +51,7 @@ class ReminderAction(BaseAction):
 
         if not trigger_time:
             # Default to 1 hour from now
-            trigger_time = datetime.now().replace(
-                hour=datetime.now().hour + 1,
-                minute=0,
-                second=0,
-            )
+            trigger_time = datetime.now() + timedelta(hours=1)
 
         # Ensure it's in the future
         if trigger_time <= datetime.now():

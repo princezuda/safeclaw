@@ -146,6 +146,7 @@ class Crawler:
     async def __aexit__(self, *args):
         if self._client:
             await self._client.aclose()
+            self._client = None
 
     async def fetch(self, url: str, allow_internal: bool = False) -> CrawlResult:
         """Fetch a single URL and extract content."""
