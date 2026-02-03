@@ -436,38 +436,114 @@ await client.send_to_slack(
 )
 ```
 
-## Extending SafeClaw
+## Plugins
 
-### Custom Actions
+SafeClaw has a plugin system for extending functionality. Plugins are automatically loaded from:
+
+```
+src/safeclaw/plugins/
+├── official/      # Curated, tested plugins
+│   └── smarthome.py
+├── community/     # User-contributed plugins
+│   └── your_plugin.py
+├── base.py        # BasePlugin class
+└── loader.py      # Plugin loader
+```
+
+### Official Plugins
+
+| Plugin | Description | Install |
+|--------|-------------|---------|
+| `smarthome` | Philips Hue & MQTT/Home Assistant | `pip install safeclaw[smarthome]` |
+
+### Creating a Plugin
+
+Create a new `.py` file in `plugins/community/`:
 
 ```python
-from safeclaw.actions.base import BaseAction
+# plugins/community/hello.py
+from safeclaw.plugins.base import BasePlugin, PluginInfo
 
-class MyAction(BaseAction):
-    name = "myaction"
+class HelloPlugin(BasePlugin):
+    info = PluginInfo(
+        name="hello",
+        version="1.0.0",
+        description="A friendly greeting plugin",
+        author="Your Name",
+        keywords=["hello", "hi", "greet", "hey"],
+        patterns=[r"^hello$", r"^hi\s*(.*)$", r"^hey\s*(.*)$"],
+        examples=["hello", "hi there", "hey safeclaw"],
+    )
 
     async def execute(self, params, user_id, channel, engine):
-        # Your logic here
-        return "Action completed!"
-
-# Register it
-engine.register_action("myaction", MyAction().execute)
+        return "Hello! How can I help you today?"
 ```
 
-### Custom Intent Patterns
+That's it! The plugin is automatically:
+- Loaded on startup
+- Registered as an action
+- Added to the parser with your keywords/patterns
 
-Add to `config/intents.yaml`:
+### Plugin API
 
-```yaml
-intents:
-  deploy:
-    keywords: ["deploy", "release", "ship"]
-    patterns:
-      - "deploy to (production|staging)"
-    examples:
-      - "deploy to production"
-    action: "webhook"
+```python
+class BasePlugin(ABC):
+    info: PluginInfo  # Required metadata
+
+    async def execute(self, params, user_id, channel, engine) -> str:
+        """Main plugin logic. Return response string."""
+        pass
+
+    def on_load(self, engine) -> None:
+        """Called when plugin loads. Use for initialization."""
+        pass
+
+    def on_unload(self) -> None:
+        """Called when plugin unloads. Use for cleanup."""
+        pass
 ```
+
+### PluginInfo Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | str | Unique plugin name (becomes the action name) |
+| `version` | str | Semantic version |
+| `description` | str | What the plugin does |
+| `author` | str | Plugin author |
+| `keywords` | list | Words that trigger this plugin |
+| `patterns` | list | Regex patterns for matching |
+| `examples` | list | Example commands for help text |
+
+### Accessing Engine Features
+
+Plugins have full access to the SafeClaw engine:
+
+```python
+async def execute(self, params, user_id, channel, engine):
+    # Access config
+    my_config = engine.config.get("plugins", {}).get("myplugin", {})
+
+    # Access memory (SQLite)
+    await engine.memory.set("key", "value")
+    value = await engine.memory.get("key")
+
+    # Access other actions
+    # result = await engine.actions["weather"](params={}, user_id=user_id, ...)
+
+    return "Done!"
+```
+
+### Contributing Plugins
+
+1. Create your plugin in `plugins/community/`
+2. Test it thoroughly
+3. Submit a PR to move it to `plugins/official/`
+
+We review plugins for:
+- Security (no malicious code)
+- Quality (error handling, logging)
+- Usefulness (solves a real need)
 
 ## Comparison with Clawdbot/OpenClaw
 

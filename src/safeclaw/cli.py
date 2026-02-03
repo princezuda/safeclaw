@@ -37,6 +37,7 @@ from safeclaw.core.feeds import FeedReader, PRESET_FEEDS
 from safeclaw.core.analyzer import TextAnalyzer
 from safeclaw.core.documents import DocumentReader
 from safeclaw.core.notifications import NotificationManager
+from safeclaw.plugins import PluginLoader
 
 app = typer.Typer(
     name="safeclaw",
@@ -82,6 +83,10 @@ def create_engine(config_path: Optional[Path] = None) -> SafeClaw:
     engine.register_action("calendar", calendar_action.execute)
     engine.register_action("weather", weather_action.execute)
     engine.register_action("help", lambda **_: engine.get_help())
+
+    # Load plugins from plugins/official/ and plugins/community/
+    plugin_loader = PluginLoader()
+    plugin_loader.load_all(engine)
 
     return engine
 
