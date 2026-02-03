@@ -219,37 +219,36 @@ actions:
       - "~"
   weather:
     enabled: true
-    api_key: "your-openweathermap-key"  # Free at openweathermap.org
+    provider: "wttr"  # or "open-meteo" - both free, no API key!
     units: "imperial"  # or "metric"
     default_location: "New York"
 ```
 
-### Weather API (Free)
+### Weather (No API Key Needed)
 
-SafeClaw can fetch weather using the free OpenWeatherMap **Current Weather API**:
+SafeClaw uses **[wttr.in](https://wttr.in)** for weather - a free service that requires no API key:
 
-1. **Get a free API key** at [openweathermap.org/appid](https://openweathermap.org/appid)
-   - Sign up → Go to "API keys" tab → Copy your key
-   - **Free tier: 1,000 calls/day** (plenty for personal use)
-   - No credit card required
-   - ⚠️ Note: Use "Current Weather" API (free), NOT "One Call API 3.0" (paid)
-
-2. **Add to your config** (`~/.safeclaw/config.yaml`):
-```yaml
-actions:
-  weather:
-    enabled: true
-    api_key: "your-api-key-here"
-    units: "imperial"  # or "metric" for Celsius
-    default_location: "Your City"
-```
-
-3. **Use it:**
 ```
 > weather
 > weather in Paris
 > what's the weather in Tokyo
 ```
+
+**Alternative: Open-Meteo** (also free, no key):
+Add to config (`~/.safeclaw/config.yaml`) if you prefer Open-Meteo:
+```yaml
+actions:
+  weather:
+    enabled: true
+    provider: "open-meteo"  # or "wttr" (default)
+    units: "imperial"  # or "metric" for Celsius
+    default_location: "New York"
+```
+
+Both options:
+- ✅ 100% free
+- ✅ No API key required
+- ✅ No sign-up needed
 
 ### Command Chaining
 
