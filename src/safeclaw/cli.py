@@ -32,6 +32,7 @@ from safeclaw.actions.briefing import BriefingAction
 from safeclaw.actions.news import NewsAction
 from safeclaw.actions.email import EmailAction
 from safeclaw.actions.calendar import CalendarAction
+from safeclaw.actions import weather as weather_action
 from safeclaw.core.feeds import FeedReader, PRESET_FEEDS
 from safeclaw.core.analyzer import TextAnalyzer
 from safeclaw.core.documents import DocumentReader
@@ -79,6 +80,7 @@ def create_engine(config_path: Optional[Path] = None) -> SafeClaw:
     engine.register_action("news", news_action.execute)
     engine.register_action("email", email_action.execute)
     engine.register_action("calendar", calendar_action.execute)
+    engine.register_action("weather", weather_action.execute)
     engine.register_action("help", lambda **_: engine.get_help())
 
     return engine
