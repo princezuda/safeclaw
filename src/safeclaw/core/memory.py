@@ -2,6 +2,7 @@
 SafeClaw Memory - Persistent storage for conversations and data.
 
 SQLite-based with async support. No cloud required.
+Uses prepared statements with named parameters for SQL injection safety.
 """
 
 import json
@@ -13,6 +14,107 @@ from typing import Any, Optional
 import aiosqlite
 
 logger = logging.getLogger(__name__)
+
+
+class PreparedStatements:
+    """
+    Pre-defined SQL statements with named parameters.
+
+    Using named parameters (:param) instead of positional (?) provides:
+    - Protection against SQL injection via parameter binding
+    - Better readability and maintainability
+    - Reduced risk of parameter ordering errors
+    - Explicit statement caching by SQLite
+    """
+
+    # Messages
+    INSERT_MESSAGE = """
+        INSERT INTO messages (user_id, channel, text, intent, params, metadata)
+        VALUES (:user_id, :channel, :text, :intent, :params, :metadata)
+    """
+
+    SELECT_MESSAGES_BASE = """
+        SELECT id, user_id, channel, text, intent, params, metadata, created_at
+        FROM messages WHERE user_id = :user_id
+    """
+
+    SELECT_MESSAGES_WITH_CHANNEL = """
+        SELECT id, user_id, channel, text, intent, params, metadata, created_at
+        FROM messages WHERE user_id = :user_id AND channel = :channel
+        ORDER BY created_at DESC LIMIT :limit
+    """
+
+    SELECT_MESSAGES_NO_CHANNEL = """
+        SELECT id, user_id, channel, text, intent, params, metadata, created_at
+        FROM messages WHERE user_id = :user_id
+        ORDER BY created_at DESC LIMIT :limit
+    """
+
+    # Preferences
+    SELECT_PREFERENCES = """
+        SELECT data FROM preferences WHERE user_id = :user_id
+    """
+
+    UPSERT_PREFERENCES = """
+        INSERT OR REPLACE INTO preferences (user_id, data, updated_at)
+        VALUES (:user_id, :data, CURRENT_TIMESTAMP)
+    """
+
+    # Reminders
+    INSERT_REMINDER = """
+        INSERT INTO reminders (user_id, channel, task, trigger_at, repeat)
+        VALUES (:user_id, :channel, :task, :trigger_at, :repeat)
+    """
+
+    SELECT_PENDING_REMINDERS = """
+        SELECT id, user_id, channel, task, trigger_at, repeat, completed, created_at
+        FROM reminders
+        WHERE completed = 0 AND trigger_at <= :before
+        ORDER BY trigger_at
+    """
+
+    UPDATE_REMINDER_COMPLETED = """
+        UPDATE reminders SET completed = 1 WHERE id = :reminder_id
+    """
+
+    # Webhooks
+    UPSERT_WEBHOOK = """
+        INSERT OR REPLACE INTO webhooks (name, secret, action, params)
+        VALUES (:name, :secret, :action, :params)
+    """
+
+    SELECT_WEBHOOK = """
+        SELECT id, name, secret, action, params, enabled, created_at
+        FROM webhooks WHERE name = :name AND enabled = 1
+    """
+
+    SELECT_ALL_WEBHOOKS = """
+        SELECT id, name, secret, action, params, enabled, created_at
+        FROM webhooks
+    """
+
+    # Crawl cache
+    UPSERT_CRAWL_CACHE = """
+        INSERT OR REPLACE INTO crawl_cache (url, content, links, summary, fetched_at, expires_at)
+        VALUES (:url, :content, :links, :summary, CURRENT_TIMESTAMP, :expires_at)
+    """
+
+    SELECT_CRAWL_CACHE = """
+        SELECT url, content, links, summary, fetched_at, expires_at
+        FROM crawl_cache
+        WHERE url = :url AND expires_at > CURRENT_TIMESTAMP
+    """
+
+    # Key-value store
+    UPSERT_KEYVALUE = """
+        INSERT OR REPLACE INTO keyvalue (key, value, expires_at, updated_at)
+        VALUES (:key, :value, :expires_at, CURRENT_TIMESTAMP)
+    """
+
+    SELECT_KEYVALUE = """
+        SELECT value FROM keyvalue
+        WHERE key = :key AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+    """
 
 
 class Memory:
@@ -33,7 +135,14 @@ class Memory:
 
     async def initialize(self) -> None:
         """Initialize database and create tables."""
-        self._connection = await aiosqlite.connect(self.db_path)
+        self._connection = await aiosqlite.connect(
+            self.db_path,
+            timeout=30.0,  # Wait up to 30 seconds for locks
+        )
+        # Enable WAL mode for better concurrency (allows reads during writes)
+        await self._connection.execute("PRAGMA journal_mode=WAL")
+        # Use row_factory for named column access (safer than positional indexing)
+        self._connection.row_factory = aiosqlite.Row
         await self._create_tables()
         logger.info(f"Memory initialized at {self.db_path}")
 
@@ -126,22 +235,19 @@ class Memory:
         parsed: Any,
         metadata: Optional[dict] = None,
     ) -> int:
-        """Store a message in history."""
+        """Store a message in history using prepared statement."""
         assert self._connection is not None
 
         cursor = await self._connection.execute(
-            """
-            INSERT INTO messages (user_id, channel, text, intent, params, metadata)
-            VALUES (?, ?, ?, ?, ?, ?)
-            """,
-            (
-                user_id,
-                channel,
-                text,
-                parsed.intent if parsed else None,
-                json.dumps(parsed.params) if parsed else None,
-                json.dumps(metadata) if metadata else None,
-            ),
+            PreparedStatements.INSERT_MESSAGE,
+            {
+                "user_id": user_id,
+                "channel": channel,
+                "text": text,
+                "intent": parsed.intent if parsed else None,
+                "params": json.dumps(parsed.params) if parsed else None,
+                "metadata": json.dumps(metadata) if metadata else None,
+            },
         )
         await self._connection.commit()
         return cursor.lastrowid or 0
@@ -152,74 +258,70 @@ class Memory:
         limit: int = 50,
         channel: Optional[str] = None,
     ) -> list[dict[str, Any]]:
-        """Retrieve conversation history for a user."""
+        """Retrieve conversation history using prepared statement."""
         assert self._connection is not None
 
-        query = "SELECT * FROM messages WHERE user_id = ?"
-        params: list[Any] = [user_id]
-
+        # Use pre-defined prepared statements to avoid dynamic query construction
         if channel:
-            query += " AND channel = ?"
-            params.append(channel)
-
-        query += " ORDER BY created_at DESC LIMIT ?"
-        params.append(limit)
+            query = PreparedStatements.SELECT_MESSAGES_WITH_CHANNEL
+            params = {"user_id": user_id, "channel": channel, "limit": limit}
+        else:
+            query = PreparedStatements.SELECT_MESSAGES_NO_CHANNEL
+            params = {"user_id": user_id, "limit": limit}
 
         cursor = await self._connection.execute(query, params)
         rows = await cursor.fetchall()
 
+        # Use named column access via row_factory for safer data retrieval
         return [
             {
-                "id": row[0],
-                "user_id": row[1],
-                "channel": row[2],
-                "text": row[3],
-                "intent": row[4],
-                "params": json.loads(row[5]) if row[5] else None,
-                "metadata": json.loads(row[6]) if row[6] else None,
-                "created_at": row[7],
+                "id": row["id"],
+                "user_id": row["user_id"],
+                "channel": row["channel"],
+                "text": row["text"],
+                "intent": row["intent"],
+                "params": json.loads(row["params"]) if row["params"] else None,
+                "metadata": json.loads(row["metadata"]) if row["metadata"] else None,
+                "created_at": row["created_at"],
             }
             for row in reversed(rows)
         ]
 
     # Preferences
     async def set_preference(self, user_id: str, key: str, value: Any) -> None:
-        """Set a user preference."""
+        """Set a user preference using prepared statement."""
         assert self._connection is not None
 
-        # Get existing preferences
+        # Get existing preferences using prepared statement
         cursor = await self._connection.execute(
-            "SELECT data FROM preferences WHERE user_id = ?", (user_id,)
+            PreparedStatements.SELECT_PREFERENCES, {"user_id": user_id}
         )
         row = await cursor.fetchone()
 
         if row:
-            prefs = json.loads(row[0])
+            prefs = json.loads(row["data"])
         else:
             prefs = {}
 
         prefs[key] = value
 
         await self._connection.execute(
-            """
-            INSERT OR REPLACE INTO preferences (user_id, data, updated_at)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-            """,
-            (user_id, json.dumps(prefs)),
+            PreparedStatements.UPSERT_PREFERENCES,
+            {"user_id": user_id, "data": json.dumps(prefs)},
         )
         await self._connection.commit()
 
     async def get_preference(self, user_id: str, key: str, default: Any = None) -> Any:
-        """Get a user preference."""
+        """Get a user preference using prepared statement."""
         assert self._connection is not None
 
         cursor = await self._connection.execute(
-            "SELECT data FROM preferences WHERE user_id = ?", (user_id,)
+            PreparedStatements.SELECT_PREFERENCES, {"user_id": user_id}
         )
         row = await cursor.fetchone()
 
         if row:
-            prefs = json.loads(row[0])
+            prefs = json.loads(row["data"])
             return prefs.get(key, default)
 
         return default
@@ -233,56 +335,55 @@ class Memory:
         trigger_at: datetime,
         repeat: Optional[str] = None,
     ) -> int:
-        """Add a reminder."""
+        """Add a reminder using prepared statement."""
         assert self._connection is not None
 
         cursor = await self._connection.execute(
-            """
-            INSERT INTO reminders (user_id, channel, task, trigger_at, repeat)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (user_id, channel, task, trigger_at.isoformat(), repeat),
+            PreparedStatements.INSERT_REMINDER,
+            {
+                "user_id": user_id,
+                "channel": channel,
+                "task": task,
+                "trigger_at": trigger_at.isoformat(),
+                "repeat": repeat,
+            },
         )
         await self._connection.commit()
         return cursor.lastrowid or 0
 
     async def get_pending_reminders(self, before: Optional[datetime] = None) -> list[dict]:
-        """Get reminders that are due."""
+        """Get reminders that are due using prepared statement."""
         assert self._connection is not None
 
         before = before or datetime.now()
 
         cursor = await self._connection.execute(
-            """
-            SELECT * FROM reminders
-            WHERE completed = 0 AND trigger_at <= ?
-            ORDER BY trigger_at
-            """,
-            (before.isoformat(),),
+            PreparedStatements.SELECT_PENDING_REMINDERS,
+            {"before": before.isoformat()},
         )
         rows = await cursor.fetchall()
 
         return [
             {
-                "id": row[0],
-                "user_id": row[1],
-                "channel": row[2],
-                "task": row[3],
-                "trigger_at": datetime.fromisoformat(row[4]),
-                "repeat": row[5],
-                "completed": bool(row[6]),
-                "created_at": row[7],
+                "id": row["id"],
+                "user_id": row["user_id"],
+                "channel": row["channel"],
+                "task": row["task"],
+                "trigger_at": datetime.fromisoformat(row["trigger_at"]),
+                "repeat": row["repeat"],
+                "completed": bool(row["completed"]),
+                "created_at": row["created_at"],
             }
             for row in rows
         ]
 
     async def complete_reminder(self, reminder_id: int) -> None:
-        """Mark a reminder as completed."""
+        """Mark a reminder as completed using prepared statement."""
         assert self._connection is not None
 
         await self._connection.execute(
-            "UPDATE reminders SET completed = 1 WHERE id = ?",
-            (reminder_id,),
+            PreparedStatements.UPDATE_REMINDER_COMPLETED,
+            {"reminder_id": reminder_id},
         )
         await self._connection.commit()
 
@@ -294,57 +395,58 @@ class Memory:
         params: Optional[dict] = None,
         secret: Optional[str] = None,
     ) -> None:
-        """Register a webhook."""
+        """Register a webhook using prepared statement."""
         assert self._connection is not None
 
         await self._connection.execute(
-            """
-            INSERT OR REPLACE INTO webhooks (name, secret, action, params)
-            VALUES (?, ?, ?, ?)
-            """,
-            (name, secret, action, json.dumps(params) if params else None),
+            PreparedStatements.UPSERT_WEBHOOK,
+            {
+                "name": name,
+                "secret": secret,
+                "action": action,
+                "params": json.dumps(params) if params else None,
+            },
         )
         await self._connection.commit()
 
     async def get_webhook(self, name: str) -> Optional[dict]:
-        """Get a webhook by name."""
+        """Get a webhook by name using prepared statement."""
         assert self._connection is not None
 
         cursor = await self._connection.execute(
-            "SELECT * FROM webhooks WHERE name = ? AND enabled = 1",
-            (name,),
+            PreparedStatements.SELECT_WEBHOOK, {"name": name}
         )
         row = await cursor.fetchone()
 
         if row:
             return {
-                "id": row[0],
-                "name": row[1],
-                "secret": row[2],
-                "action": row[3],
-                "params": json.loads(row[4]) if row[4] else None,
-                "enabled": bool(row[5]),
-                "created_at": row[6],
+                "id": row["id"],
+                "name": row["name"],
+                "secret": row["secret"],
+                "action": row["action"],
+                "params": json.loads(row["params"]) if row["params"] else None,
+                "enabled": bool(row["enabled"]),
+                "created_at": row["created_at"],
             }
 
         return None
 
     async def list_webhooks(self) -> list[dict]:
-        """List all webhooks."""
+        """List all webhooks using prepared statement."""
         assert self._connection is not None
 
-        cursor = await self._connection.execute("SELECT * FROM webhooks")
+        cursor = await self._connection.execute(PreparedStatements.SELECT_ALL_WEBHOOKS)
         rows = await cursor.fetchall()
 
         return [
             {
-                "id": row[0],
-                "name": row[1],
-                "secret": row[2],
-                "action": row[3],
-                "params": json.loads(row[4]) if row[4] else None,
-                "enabled": bool(row[5]),
-                "created_at": row[6],
+                "id": row["id"],
+                "name": row["name"],
+                "secret": row["secret"],
+                "action": row["action"],
+                "params": json.loads(row["params"]) if row["params"] else None,
+                "enabled": bool(row["enabled"]),
+                "created_at": row["created_at"],
             }
             for row in rows
         ]
@@ -358,48 +460,47 @@ class Memory:
         summary: Optional[str] = None,
         ttl_hours: int = 24,
     ) -> None:
-        """Cache crawl results."""
+        """Cache crawl results using prepared statement."""
         assert self._connection is not None
 
         expires_at = datetime.now() + timedelta(hours=ttl_hours)
 
         await self._connection.execute(
-            """
-            INSERT OR REPLACE INTO crawl_cache (url, content, links, summary, fetched_at, expires_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)
-            """,
-            (url, content, json.dumps(links), summary, expires_at.isoformat()),
+            PreparedStatements.UPSERT_CRAWL_CACHE,
+            {
+                "url": url,
+                "content": content,
+                "links": json.dumps(links),
+                "summary": summary,
+                "expires_at": expires_at.isoformat(),
+            },
         )
         await self._connection.commit()
 
     async def get_cached_crawl(self, url: str) -> Optional[dict]:
-        """Get cached crawl result if not expired."""
+        """Get cached crawl result if not expired using prepared statement."""
         assert self._connection is not None
 
         cursor = await self._connection.execute(
-            """
-            SELECT * FROM crawl_cache
-            WHERE url = ? AND expires_at > CURRENT_TIMESTAMP
-            """,
-            (url,),
+            PreparedStatements.SELECT_CRAWL_CACHE, {"url": url}
         )
         row = await cursor.fetchone()
 
         if row:
             return {
-                "url": row[0],
-                "content": row[1],
-                "links": json.loads(row[2]) if row[2] else [],
-                "summary": row[3],
-                "fetched_at": row[4],
-                "expires_at": row[5],
+                "url": row["url"],
+                "content": row["content"],
+                "links": json.loads(row["links"]) if row["links"] else [],
+                "summary": row["summary"],
+                "fetched_at": row["fetched_at"],
+                "expires_at": row["expires_at"],
             }
 
         return None
 
     # Key-value store
     async def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None:
-        """Set a key-value pair."""
+        """Set a key-value pair using prepared statement."""
         assert self._connection is not None
 
         expires_at = None
@@ -407,28 +508,21 @@ class Memory:
             expires_at = (datetime.now() + timedelta(seconds=ttl_seconds)).isoformat()
 
         await self._connection.execute(
-            """
-            INSERT OR REPLACE INTO keyvalue (key, value, expires_at, updated_at)
-            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-            """,
-            (key, json.dumps(value), expires_at),
+            PreparedStatements.UPSERT_KEYVALUE,
+            {"key": key, "value": json.dumps(value), "expires_at": expires_at},
         )
         await self._connection.commit()
 
     async def get(self, key: str, default: Any = None) -> Any:
-        """Get a value by key."""
+        """Get a value by key using prepared statement."""
         assert self._connection is not None
 
         cursor = await self._connection.execute(
-            """
-            SELECT value FROM keyvalue
-            WHERE key = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-            """,
-            (key,),
+            PreparedStatements.SELECT_KEYVALUE, {"key": key}
         )
         row = await cursor.fetchone()
 
         if row:
-            return json.loads(row[0])
+            return json.loads(row["value"])
 
         return default
