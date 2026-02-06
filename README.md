@@ -68,6 +68,7 @@ SafeClaw is an open-source alternative to cloud-based AI assistants that runs en
 
 ### Using pipx (recommended for most users)
 
+**Linux:**
 ```bash
 # Install pipx if needed
 sudo apt install pipx
@@ -77,9 +78,17 @@ pipx ensurepath
 pipx install safeclaw
 ```
 
-### Using pip with virtual environment
+**macOS:**
+```bash
+# Install pipx if needed
+brew install pipx
+pipx ensurepath
 
-Modern Linux distros require virtual environments:
+# Install SafeClaw
+pipx install safeclaw
+```
+
+### Using pip with virtual environment
 
 ```bash
 # Create and activate venv
@@ -96,6 +105,24 @@ pip install safeclaw
 git clone https://github.com/safeclaw/safeclaw.git
 cd safeclaw
 pip install -e .
+```
+
+### macOS Dependencies
+
+SafeClaw works on macOS out of the box for core features. For optional audio/voice features:
+
+```bash
+# Text-to-speech (system 'say' command works by default)
+# For Piper TTS:
+pip install piper-tts
+
+# Audio recording (for Whisper STT)
+pip install sounddevice
+# Or install SoX for command-line recording:
+brew install sox
+
+# OCR support
+brew install tesseract
 ```
 
 ### Optional ML Features
@@ -116,7 +143,7 @@ pip install safeclaw[ocr]
 pip install safeclaw[ml]
 ```
 
-**Requirements:** Python 3.11+, ~50MB disk (base), ~2GB additional for vision features
+**Requirements:** Python 3.11+, macOS or Linux, ~50MB disk (base), ~2GB additional for vision features
 
 ## Quick Start
 

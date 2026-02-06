@@ -16,6 +16,7 @@ Usage:
 """
 
 import asyncio
+import platform
 import shutil
 import subprocess
 import logging
@@ -101,6 +102,12 @@ class PiperTTSPlugin(BasePlugin):
             Path("/usr/bin/piper"),
             Path.home() / "piper" / "piper",
         ]
+
+        # Add Homebrew paths on macOS
+        if platform.system() == "Darwin":
+            common_paths.extend([
+                Path("/opt/homebrew/bin/piper"),  # Apple Silicon
+            ])
 
         for path in common_paths:
             if path.exists():
@@ -366,7 +373,7 @@ class PiperTTSPlugin(BasePlugin):
 
     async def _play_raw_audio(self, data: bytes, sample_rate: int = 22050) -> None:
         """Play raw audio data."""
-        # aplay can play raw audio
+        # aplay can play raw audio directly from stdin (Linux/ALSA)
         if shutil.which("aplay"):
             try:
                 process = await asyncio.create_subprocess_exec(
@@ -381,8 +388,58 @@ class PiperTTSPlugin(BasePlugin):
                     stderr=asyncio.subprocess.DEVNULL,
                 )
                 await process.communicate(data)
+                return
             except Exception as e:
-                logger.error(f"Failed to play raw audio: {e}")
+                logger.warning(f"aplay raw playback failed: {e}")
+
+        # sox play can handle raw audio from stdin (cross-platform, macOS via brew)
+        if shutil.which("play"):
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    "play",
+                    "-q",
+                    "-t", "raw",
+                    "-r", str(sample_rate),
+                    "-e", "signed-integer",
+                    "-b", "16",
+                    "-c", "1",
+                    "-",
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                await process.communicate(data)
+                return
+            except Exception as e:
+                logger.warning(f"sox play raw playback failed: {e}")
+
+        # afplay requires a file on disk (macOS)
+        if shutil.which("afplay"):
+            try:
+                import tempfile
+                import wave
+
+                with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
+                    temp_path = f.name
+
+                with wave.open(temp_path, "wb") as wf:
+                    wf.setnchannels(1)
+                    wf.setsampwidth(2)  # 16-bit
+                    wf.setframerate(sample_rate)
+                    wf.writeframes(data)
+
+                process = await asyncio.create_subprocess_exec(
+                    "afplay", temp_path,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                await process.wait()
+                Path(temp_path).unlink(missing_ok=True)
+                return
+            except Exception as e:
+                logger.warning(f"afplay raw playback failed: {e}")
+
+        logger.error("No audio player available for raw audio playback")
 
     async def speak_response(self, response: str) -> None:
         """

@@ -92,7 +92,7 @@ class WebhookServer:
 
     def __init__(
         self,
-        host: str = "0.0.0.0",
+        host: str = "127.0.0.1",
         port: int = 8765,
     ):
         self.host = host
@@ -256,6 +256,16 @@ class WebhookClient:
         Returns:
             Response info dict
         """
+        # SSRF protection: prevent sending webhooks to internal networks
+        from safeclaw.core.crawler import is_safe_url
+
+        is_safe, reason = is_safe_url(url)
+        if not is_safe:
+            return {
+                "success": False,
+                "error": f"SSRF blocked: {reason}",
+            }
+
         headers = headers or {}
         headers["Content-Type"] = "application/json"
 

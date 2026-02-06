@@ -79,9 +79,8 @@ def is_safe_url(url: str) -> tuple[bool, str]:
                 except ValueError:
                     continue
         except socket.gaierror:
-            # DNS resolution failed - could be legitimate or could be attack
-            # Allow it but log warning
-            logger.warning(f"DNS resolution failed for {hostname}")
+            # DNS resolution failed - block to prevent DNS rebinding attacks
+            return False, f"DNS resolution failed for {hostname}"
 
         return True, ""
 
@@ -135,11 +134,13 @@ class Crawler:
         self._robots_cache: dict[str, set[str]] = {}
         self._client: Optional[httpx.AsyncClient] = None
 
+    MAX_REDIRECTS = 10
+
     async def __aenter__(self):
         self._client = httpx.AsyncClient(
             timeout=self.timeout,
             headers={"User-Agent": self.user_agent},
-            follow_redirects=True,
+            follow_redirects=False,
         )
         return self
 
@@ -164,11 +165,32 @@ class Crawler:
             self._client = httpx.AsyncClient(
                 timeout=self.timeout,
                 headers={"User-Agent": self.user_agent},
-                follow_redirects=True,
+                follow_redirects=False,
             )
 
         try:
-            response = await self._client.get(url)
+            # Manually follow redirects with SSRF checks on each target
+            current_url = url
+            for _ in range(self.MAX_REDIRECTS):
+                response = await self._client.get(current_url)
+                if response.status_code in (301, 302, 303, 307, 308):
+                    location = response.headers.get("location")
+                    if not location:
+                        result.error = "Redirect with no Location header"
+                        return result
+                    redirect_url = urljoin(current_url, location)
+                    if not allow_internal:
+                        redirect_safe, redirect_reason = is_safe_url(redirect_url)
+                        if not redirect_safe:
+                            result.error = f"SSRF blocked on redirect: {redirect_reason}"
+                            logger.warning(
+                                f"Blocked SSRF redirect: {current_url} -> {redirect_url}"
+                            )
+                            return result
+                    current_url = redirect_url
+                    continue
+                break
+
             result.status_code = response.status_code
 
             if response.status_code != 200:

@@ -12,7 +12,7 @@ channels:
   webhook:
     enabled: true
     port: 8765
-    host: "0.0.0.0"
+    host: "127.0.0.1"  # Use "0.0.0.0" only if you need network access
   telegram:
     enabled: false
     token: ""  # Get from @BotFather

@@ -18,6 +18,7 @@ Usage:
 """
 
 import asyncio
+import platform
 import shutil
 import tempfile
 import logging
@@ -119,6 +120,13 @@ class WhisperSTTPlugin(BasePlugin):
             Path("/usr/local/bin/whisper"),
         ]
 
+        # Add Homebrew paths on macOS
+        if platform.system() == "Darwin":
+            common_paths.extend([
+                Path("/opt/homebrew/bin/whisper"),  # Apple Silicon
+                Path("/opt/homebrew/bin/whisper-cpp"),
+            ])
+
         for path in common_paths:
             if path.exists():
                 return path
@@ -174,12 +182,15 @@ class WhisperSTTPlugin(BasePlugin):
 
         # Check for audio recording capability
         if not self._can_record():
+            hint = "  Or ensure 'arecord' (Linux) or 'rec' (SoX) is available."
+            if platform.system() == "Darwin":
+                hint = "  Or install SoX: brew install sox"
             return (
                 "[yellow]Audio recording not available.[/yellow]\n\n"
                 "Install one of:\n"
                 "  pip install sounddevice\n"
                 "  pip install pyaudio\n\n"
-                "Or ensure 'arecord' (Linux) is available."
+                + hint
             )
 
         self.enabled = True
@@ -229,26 +240,30 @@ class WhisperSTTPlugin(BasePlugin):
 
     def _can_record(self) -> bool:
         """Check if audio recording is available."""
-        # Check for sounddevice
+        # Check for sounddevice (cross-platform)
         try:
             import sounddevice
             return True
         except ImportError:
             pass
 
-        # Check for pyaudio
+        # Check for pyaudio (cross-platform)
         try:
             import pyaudio
             return True
         except ImportError:
             pass
 
-        # Check for arecord (Linux)
+        # Check for arecord (Linux/ALSA)
         if shutil.which("arecord"):
             return True
 
-        # Check for sox rec
+        # Check for sox rec (cross-platform, macOS via `brew install sox`)
         if shutil.which("rec"):
+            return True
+
+        # Check for ffmpeg (cross-platform, macOS via `brew install ffmpeg`)
+        if shutil.which("ffmpeg"):
             return True
 
         return False
@@ -367,7 +382,7 @@ class WhisperSTTPlugin(BasePlugin):
         except Exception as e:
             logger.warning(f"sounddevice recording failed: {e}")
 
-        # Try arecord (Linux)
+        # Try arecord (Linux/ALSA)
         if shutil.which("arecord"):
             try:
                 process = await asyncio.create_subprocess_exec(
@@ -388,7 +403,7 @@ class WhisperSTTPlugin(BasePlugin):
             except Exception as e:
                 logger.warning(f"arecord failed: {e}")
 
-        # Try sox rec
+        # Try sox rec (cross-platform, works on macOS with `brew install sox`)
         if shutil.which("rec"):
             try:
                 process = await asyncio.create_subprocess_exec(
@@ -408,6 +423,34 @@ class WhisperSTTPlugin(BasePlugin):
 
             except Exception as e:
                 logger.warning(f"sox rec failed: {e}")
+
+        # Try ffmpeg (cross-platform, works on macOS with `brew install ffmpeg`)
+        if shutil.which("ffmpeg"):
+            try:
+                # On macOS, use avfoundation; on Linux, use alsa/pulse
+                if platform.system() == "Darwin":
+                    input_args = ["-f", "avfoundation", "-i", ":default"]
+                else:
+                    input_args = ["-f", "alsa", "-i", "default"]
+
+                process = await asyncio.create_subprocess_exec(
+                    "ffmpeg", "-y",
+                    *input_args,
+                    "-t", str(duration),
+                    "-ar", str(sample_rate),
+                    "-ac", "1",
+                    "-sample_fmt", "s16",
+                    temp_path,
+                    stdout=asyncio.subprocess.DEVNULL,
+                    stderr=asyncio.subprocess.DEVNULL,
+                )
+                await process.wait()
+
+                if process.returncode == 0:
+                    return temp_path
+
+            except Exception as e:
+                logger.warning(f"ffmpeg recording failed: {e}")
 
         # Clean up on failure
         Path(temp_path).unlink(missing_ok=True)
@@ -499,13 +542,28 @@ class WhisperSTTPlugin(BasePlugin):
         """Transcribe an audio file."""
         path = Path(file_path.strip('"\''))
 
-        if not path.exists():
+        # Resolve to prevent path traversal and restrict to home directory
+        try:
+            resolved = path.expanduser().resolve()
+            home = Path.home().resolve()
+            if not (resolved == home or resolved.is_relative_to(home)):
+                return "[red]Access denied: file is outside home directory[/red]"
+        except (OSError, ValueError):
+            return "[red]Invalid file path[/red]"
+
+        if not resolved.exists():
             return f"[red]File not found: {path}[/red]"
 
-        if not path.suffix.lower() in [".wav", ".mp3", ".flac", ".ogg", ".m4a"]:
-            return f"[yellow]Unsupported format: {path.suffix}[/yellow]\nSupported: wav, mp3, flac, ogg, m4a"
+        if resolved.suffix.lower() not in [".wav", ".mp3", ".flac", ".ogg", ".m4a"]:
+            return f"[yellow]Unsupported format: {resolved.suffix}[/yellow]\nSupported: wav, mp3, flac, ogg, m4a"
 
-        transcription = await self._transcribe(str(path))
+        # Reject symlinks pointing outside home directory
+        if resolved.is_symlink():
+            link_target = resolved.resolve(strict=True)
+            if not link_target.is_relative_to(home):
+                return "[red]Access denied: symlink target is outside home directory[/red]"
+
+        transcription = await self._transcribe(str(resolved))
 
         if transcription:
             return f"**Transcription:**\n{transcription}"

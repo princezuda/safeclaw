@@ -70,8 +70,23 @@ class DocumentReader:
         '.rtf': 'rtf',
     }
 
-    def __init__(self):
+    def __init__(self, allowed_paths: list[str] | None = None):
+        self.allowed_paths = [
+            Path(p).expanduser().resolve()
+            for p in (allowed_paths or ["~"])
+        ]
         self._check_dependencies()
+
+    def _is_allowed(self, path: Path) -> bool:
+        """Check if path is within allowed directories."""
+        try:
+            resolved = path.expanduser().resolve()
+            for allowed in self.allowed_paths:
+                if resolved == allowed or resolved.is_relative_to(allowed):
+                    return True
+            return False
+        except (OSError, ValueError):
+            return False
 
     def _check_dependencies(self) -> dict[str, bool]:
         """Check which format dependencies are available."""
@@ -94,6 +109,17 @@ class DocumentReader:
             DocumentResult with extracted text and metadata
         """
         path = Path(path)
+
+        if not self._is_allowed(path):
+            return DocumentResult(
+                path=str(path),
+                format="unknown",
+                text="",
+                page_count=0,
+                word_count=0,
+                char_count=0,
+                error=f"Access denied: {path} is outside allowed directories",
+            )
 
         if not path.exists():
             return DocumentResult(

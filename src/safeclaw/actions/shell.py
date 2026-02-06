@@ -1,8 +1,8 @@
 """Shell command execution action."""
 
 import asyncio
-import re
 import shlex
+from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 from safeclaw.actions.base import BaseAction
@@ -16,58 +16,31 @@ class ShellAction(BaseAction):
     Execute shell commands with sandboxing.
 
     Security features:
-    - Command allowlist/blocklist
+    - Command allowlist (only permitted executables can run)
     - Timeout enforcement
     - Output limiting
     - Working directory restriction
+    - Uses create_subprocess_exec (no shell interpretation)
     """
 
     name = "shell"
     description = "Execute shell commands"
 
-    # Commands that are always blocked (normalized - single spaces)
-    BLOCKED_COMMANDS = {
-        "rm -rf /",
-        "rm -rf /*",
-        "rm -rf .",
-        "rm -rf ..",
-        "mkfs",
-        "dd if=/dev/zero",
-        "dd if=/dev/random",
-        ":(){:|:&};:",  # Fork bomb
-        "chmod -r 777 /",
-        "chmod 777 /",
-        "curl | sh",
-        "curl | bash",
-        "wget | sh",
-        "wget | bash",
-        "| sh",
-        "| bash",
-        "> /dev/sd",  # Writing to disk devices
-        ">/dev/sd",
-        "/etc/passwd",
-        "/etc/shadow",
-        "$(", "`",  # Command substitution
-        "eval ",
-    }
-
-    # Dangerous patterns (regex)
-    BLOCKED_PATTERNS_REGEX = [
-        r"rm\s+-[a-z]*r[a-z]*f[a-z]*\s+/",  # rm -rf / variations
-        r"rm\s+-[a-z]*f[a-z]*r[a-z]*\s+/",  # rm -fr / variations
-        r">\s*/dev/[sh]d[a-z]",  # Writing to disk devices
-        r"mkfs\.",  # mkfs.ext4, etc.
-        r"/dev/sd[a-z]",  # Direct disk access
-        r"chmod\s+.*\s+/\s*$",  # chmod on root
-    ]
-
-    # Safe commands that don't need confirmation
-    SAFE_COMMANDS = {
+    # Default allowlist of safe executables
+    DEFAULT_ALLOWED = {
         "ls", "pwd", "whoami", "date", "cal", "uptime",
-        "df", "du", "free", "top", "ps", "cat", "head", "tail",
-        "grep", "find", "wc", "sort", "uniq", "echo",
-        "git status", "git log", "git diff", "git branch",
-        "python --version", "node --version", "npm --version",
+        "df", "du", "free", "top", "ps",
+        "cat", "head", "tail", "less", "wc", "sort", "uniq",
+        "grep", "find", "file", "stat",
+        "echo", "printf",
+        "git", "python3", "python", "node", "npm",
+        "uname", "hostname", "id", "env", "printenv",
+        "which", "type", "whereis",
+        "basename", "dirname", "realpath",
+        "diff", "md5sum", "sha256sum",
+        "ping", "dig", "nslookup", "host", "curl", "wget",
+        "tar", "gzip", "gunzip", "zip", "unzip",
+        "cp", "mv", "mkdir", "touch", "ln",
     }
 
     def __init__(
@@ -77,58 +50,42 @@ class ShellAction(BaseAction):
         timeout: float = 30.0,
         max_output: int = 10000,
         allowed_commands: list[str] | None = None,
-        blocked_patterns: list[str] | None = None,
+        working_directory: str | None = None,
     ):
         self.enabled = enabled
         self.sandboxed = sandboxed
         self.timeout = timeout
         self.max_output = max_output
-        self.allowed_commands = set(allowed_commands) if allowed_commands else None
-        self.blocked_patterns = blocked_patterns or []
+        self.working_directory = working_directory
+        if allowed_commands is not None:
+            self.allowed_commands = set(allowed_commands)
+        else:
+            self.allowed_commands = self.DEFAULT_ALLOWED.copy()
 
-    def _normalize_command(self, command: str) -> str:
-        """Normalize command for security checks."""
-        # Lowercase
-        cmd = command.lower().strip()
-        # Collapse multiple whitespace into single space
-        cmd = re.sub(r'\s+', ' ', cmd)
-        return cmd
-
-    def _is_safe(self, command: str) -> tuple[bool, str]:
+    def _validate_command(self, command: str) -> tuple[bool, str, list[str]]:
         """
-        Check if command is safe to execute.
+        Validate and parse a command string.
 
         Returns:
-            Tuple of (is_safe, reason)
+            Tuple of (is_valid, reason, parsed_args)
         """
-        # Normalize command to prevent bypass via whitespace tricks
-        command_normalized = self._normalize_command(command)
+        if not command or not command.strip():
+            return False, "Empty command", []
 
-        # Check blocklist (substring match on normalized command)
-        for blocked in self.BLOCKED_COMMANDS:
-            if blocked in command_normalized:
-                return False, f"Blocked command pattern: {blocked}"
+        try:
+            args = shlex.split(command)
+        except ValueError as e:
+            return False, f"Invalid command syntax: {e}", []
 
-        # Check regex patterns for more complex dangerous commands
-        for pattern in self.BLOCKED_PATTERNS_REGEX:
-            if re.search(pattern, command_normalized, re.IGNORECASE):
-                return False, f"Blocked dangerous pattern"
+        if not args:
+            return False, "Empty command after parsing", []
 
-        # Check user-defined blocked patterns
-        for pattern in self.blocked_patterns:
-            if pattern in command_normalized:
-                return False, f"Blocked pattern: {pattern}"
+        executable = Path(args[0]).name  # Strip path to get bare command name
 
-        # If allowlist specified, command must be in it
-        if self.allowed_commands:
-            try:
-                cmd_base = shlex.split(command)[0] if command else ""
-            except ValueError:
-                return False, "Invalid command syntax"
-            if cmd_base not in self.allowed_commands:
-                return False, f"Command not in allowlist: {cmd_base}"
+        if self.sandboxed and executable not in self.allowed_commands:
+            return False, f"Command not allowed: {executable}", []
 
-        return True, ""
+        return True, "", args
 
     async def execute(
         self,
@@ -145,17 +102,20 @@ class ShellAction(BaseAction):
         if not command:
             return "No command specified"
 
-        # Security check
-        is_safe, reason = self._is_safe(command)
-        if not is_safe:
+        # Validate and parse
+        is_valid, reason, args = self._validate_command(command)
+        if not is_valid:
             return f"Command blocked: {reason}"
 
         try:
-            # Execute command
-            process = await asyncio.create_subprocess_shell(
-                command,
+            # Use create_subprocess_exec to avoid shell interpretation.
+            # This prevents shell metacharacter injection (pipes, redirects,
+            # command substitution, variable expansion, etc.)
+            process = await asyncio.create_subprocess_exec(
+                *args,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                cwd=self.working_directory,
             )
 
             try:
