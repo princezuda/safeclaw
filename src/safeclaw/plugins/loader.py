@@ -5,10 +5,10 @@ SafeClaw Plugin Loader - Discovers and loads plugins from directories.
 import importlib.util
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
-from safeclaw.plugins.base import BasePlugin, PluginInfo
 from safeclaw.core.parser import IntentPattern
+from safeclaw.plugins.base import BasePlugin, PluginInfo
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class PluginLoader:
         self,
         plugin_path: str,
         engine: Any,
-    ) -> Optional[BasePlugin]:
+    ) -> BasePlugin | None:
         """
         Load a single plugin by path.
 
@@ -162,7 +162,7 @@ class PluginLoader:
         logger.info(f"Unloaded plugin: {name}")
         return True
 
-    def get_plugin(self, name: str) -> Optional[BasePlugin]:
+    def get_plugin(self, name: str) -> BasePlugin | None:
         """Get a loaded plugin by name."""
         return self.plugins.get(name)
 

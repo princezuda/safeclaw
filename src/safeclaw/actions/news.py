@@ -1,9 +1,9 @@
 """News aggregation and RSS feed action."""
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from safeclaw.actions.base import BaseAction
-from safeclaw.core.feeds import FeedReader, PRESET_FEEDS, Feed
+from safeclaw.core.feeds import PRESET_FEEDS, Feed, FeedReader
 
 if TYPE_CHECKING:
     from safeclaw.core.engine import SafeClaw

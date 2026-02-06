@@ -4,12 +4,10 @@ SafeClaw Easter Eggs Plugin - Fun hidden responses.
 Because every good assistant needs a bit of personality!
 """
 
-import asyncio
 import re
 from typing import Any
 
 from safeclaw.plugins.base import BasePlugin, PluginInfo
-
 
 # ASCII art hearts
 SMALL_HEART = """

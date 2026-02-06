@@ -6,7 +6,6 @@ No LLM required - uses trained statistical models.
 
 import logging
 from dataclasses import dataclass
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class NLPResult:
     """NLP analysis result."""
     text: str
     entities: list[Entity]
-    language: Optional[str] = None
+    language: str | None = None
     noun_phrases: list[str] = None
 
     def __post_init__(self):

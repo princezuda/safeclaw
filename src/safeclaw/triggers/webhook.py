@@ -9,11 +9,12 @@ import hashlib
 import hmac
 import json
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
 import httpx
-from fastapi import FastAPI, Request, HTTPException, Header
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
@@ -43,8 +44,8 @@ class WebhookHandler:
         self,
         name: str,
         action: str,
-        secret: Optional[str] = None,
-        transform: Optional[Callable[[dict], dict]] = None,
+        secret: str | None = None,
+        transform: Callable[[dict], dict] | None = None,
     ):
         self.name = name
         self.action = action
@@ -127,9 +128,9 @@ class WebhookServer:
         async def receive_webhook(
             name: str,
             request: Request,
-            x_hub_signature_256: Optional[str] = Header(None),
-            x_gitlab_token: Optional[str] = Header(None),
-            x_slack_signature: Optional[str] = Header(None),
+            x_hub_signature_256: str | None = Header(None),
+            x_gitlab_token: str | None = Header(None),
+            x_slack_signature: str | None = Header(None),
         ):
             # Check if handler exists
             if name not in self.handlers:
@@ -180,8 +181,8 @@ class WebhookServer:
         self,
         name: str,
         action: str,
-        secret: Optional[str] = None,
-        transform: Optional[Callable[[dict], dict]] = None,
+        secret: str | None = None,
+        transform: Callable[[dict], dict] | None = None,
     ) -> None:
         """Register a webhook handler."""
         self.handlers[name] = WebhookHandler(
@@ -214,7 +215,7 @@ class WebhookServer:
         logger.info(f"Starting webhook server on {self.host}:{self.port}")
         await server.serve()
 
-    async def get_event(self, timeout: Optional[float] = None) -> Optional[WebhookEvent]:
+    async def get_event(self, timeout: float | None = None) -> WebhookEvent | None:
         """Get next webhook event from queue."""
         try:
             if timeout:
@@ -223,7 +224,7 @@ class WebhookServer:
                     timeout=timeout,
                 )
             return await self.event_queue.get()
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return None
 
 
@@ -241,8 +242,8 @@ class WebhookClient:
         self,
         url: str,
         payload: dict[str, Any],
-        secret: Optional[str] = None,
-        headers: Optional[dict[str, str]] = None,
+        secret: str | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """
         Send a webhook to an external URL.
@@ -298,7 +299,7 @@ class WebhookClient:
         self,
         webhook_url: str,
         text: str,
-        blocks: Optional[list] = None,
+        blocks: list | None = None,
     ) -> dict[str, Any]:
         """Send a message to Slack via webhook."""
         payload: dict[str, Any] = {"text": text}
@@ -311,7 +312,7 @@ class WebhookClient:
         self,
         webhook_url: str,
         content: str,
-        embeds: Optional[list] = None,
+        embeds: list | None = None,
     ) -> dict[str, Any]:
         """Send a message to Discord via webhook."""
         payload: dict[str, Any] = {"content": content}

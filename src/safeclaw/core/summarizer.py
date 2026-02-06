@@ -10,23 +10,22 @@ No GenAI required! Uses mathematical algorithms:
 """
 
 import logging
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lsa import LsaSummarizer
-from sumy.summarizers.lex_rank import LexRankSummarizer
-from sumy.summarizers.text_rank import TextRankSummarizer
-from sumy.summarizers.luhn import LuhnSummarizer
-from sumy.summarizers.edmundson import EdmundsonSummarizer
 from sumy.nlp.stemmers import Stemmer
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.summarizers.edmundson import EdmundsonSummarizer
+from sumy.summarizers.lex_rank import LexRankSummarizer
+from sumy.summarizers.lsa import LsaSummarizer
+from sumy.summarizers.luhn import LuhnSummarizer
+from sumy.summarizers.text_rank import TextRankSummarizer
 from sumy.utils import get_stop_words
 
 logger = logging.getLogger(__name__)
 
 
-class SummaryMethod(str, Enum):
+class SummaryMethod(StrEnum):
     """Available summarization algorithms."""
     LSA = "lsa"
     LEXRANK = "lexrank"
@@ -105,7 +104,7 @@ class Summarizer:
         self,
         text: str,
         sentences: int = 5,
-        method: Optional[SummaryMethod] = None,
+        method: SummaryMethod | None = None,
     ) -> str:
         """
         Summarize text using extractive summarization.
@@ -145,7 +144,7 @@ class Summarizer:
         self,
         text: str,
         points: int = 5,
-        method: Optional[SummaryMethod] = None,
+        method: SummaryMethod | None = None,
     ) -> list[str]:
         """
         Summarize text as bullet points.

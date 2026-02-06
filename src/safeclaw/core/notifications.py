@@ -4,24 +4,24 @@ SafeClaw Notifications - Desktop and system notifications.
 Cross-platform support using desktop-notifier.
 """
 
-import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable, Optional, Any
-from enum import Enum
+from enum import StrEnum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
-    from desktop_notifier import DesktopNotifier, Urgency, Button
+    from desktop_notifier import Button, DesktopNotifier, Urgency
     HAS_NOTIFIER = True
 except ImportError:
     HAS_NOTIFIER = False
     logger.warning("desktop-notifier not installed")
 
 
-class NotificationPriority(str, Enum):
+class NotificationPriority(StrEnum):
     """Notification priority levels."""
     LOW = "low"
     NORMAL = "normal"
@@ -35,10 +35,10 @@ class Notification:
     title: str
     message: str
     priority: NotificationPriority = NotificationPriority.NORMAL
-    icon: Optional[str] = None
+    icon: str | None = None
     sound: bool = True
-    actions: Optional[list[tuple[str, Callable]]] = None
-    timeout: Optional[int] = None  # seconds, None = system default
+    actions: list[tuple[str, Callable]] | None = None
+    timeout: int | None = None  # seconds, None = system default
 
 
 class NotificationManager:

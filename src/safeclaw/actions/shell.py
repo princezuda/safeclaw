@@ -3,7 +3,7 @@
 import asyncio
 import shlex
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from safeclaw.actions.base import BaseAction
 
@@ -123,7 +123,7 @@ class ShellAction(BaseAction):
                     process.communicate(),
                     timeout=self.timeout,
                 )
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 process.kill()
                 return f"Command timed out after {self.timeout}s"
 

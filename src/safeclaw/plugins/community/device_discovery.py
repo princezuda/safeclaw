@@ -20,12 +20,12 @@ Usage:
 """
 
 import asyncio
-import logging
 import json
+import logging
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
-from dataclasses import dataclass, field, asdict
+from typing import Any
 
 from safeclaw.plugins.base import BasePlugin, PluginInfo
 
@@ -38,10 +38,10 @@ class DiscoveredDevice:
     name: str
     address: str  # MAC for BT, IP for network
     device_type: str  # bluetooth, network, upnp
-    manufacturer: Optional[str] = None
-    model: Optional[str] = None
+    manufacturer: str | None = None
+    model: str | None = None
     services: list[str] = field(default_factory=list)
-    rssi: Optional[int] = None  # Signal strength for BT
+    rssi: int | None = None  # Signal strength for BT
     last_seen: str = field(default_factory=lambda: datetime.now().isoformat())
     metadata: dict = field(default_factory=dict)
 
@@ -94,7 +94,7 @@ class DeviceDiscoveryPlugin(BasePlugin):
     def __init__(self):
         self.devices: dict[str, DiscoveredDevice] = {}
         self._engine: Any = None
-        self._data_file: Optional[Path] = None
+        self._data_file: Path | None = None
         self._scanning = False
 
         # Check available backends
@@ -330,8 +330,7 @@ class DeviceDiscoveryPlugin(BasePlugin):
     async def _scan_network_internal(self, timeout: float = 5.0) -> int:
         """Internal network/mDNS scan."""
         try:
-            from zeroconf import Zeroconf, ServiceBrowser
-            from zeroconf.asyncio import AsyncZeroconf
+            from zeroconf import ServiceBrowser, Zeroconf
 
             # Common service types to scan for
             service_types = [

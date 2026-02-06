@@ -7,12 +7,11 @@ All rule-based, no AI required:
 - Flesch-Kincaid for readability
 """
 
-import re
-import math
 import logging
-from dataclasses import dataclass
+import math
+import re
 from collections import Counter
-from typing import Optional
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -265,7 +264,7 @@ class TextAnalyzer:
             return []
 
         # Tokenize
-        words = re.findall(r'\b[a-zA-Z]{%d,}\b' % min_word_length, text.lower())
+        words = re.findall(rf'\b[a-zA-Z]{{{min_word_length},}}\b', text.lower())
 
         # Remove stop words
         words = [w for w in words if w not in self.STOP_WORDS]

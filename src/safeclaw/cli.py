@@ -12,31 +12,29 @@ Usage:
 import asyncio
 import logging
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
 from safeclaw import __version__
-from safeclaw.core.engine import SafeClaw
-from safeclaw.core.crawler import Crawler
-from safeclaw.core.summarizer import Summarizer, SummaryMethod
-from safeclaw.channels.cli import CLIChannel
+from safeclaw.actions import weather as weather_action
+from safeclaw.actions.briefing import BriefingAction
+from safeclaw.actions.calendar import CalendarAction
+from safeclaw.actions.crawl import CrawlAction
+from safeclaw.actions.email import EmailAction
 from safeclaw.actions.files import FilesAction
+from safeclaw.actions.news import NewsAction
+from safeclaw.actions.reminder import ReminderAction
 from safeclaw.actions.shell import ShellAction
 from safeclaw.actions.summarize import SummarizeAction
-from safeclaw.actions.crawl import CrawlAction
-from safeclaw.actions.reminder import ReminderAction
-from safeclaw.actions.briefing import BriefingAction
-from safeclaw.actions.news import NewsAction
-from safeclaw.actions.email import EmailAction
-from safeclaw.actions.calendar import CalendarAction
-from safeclaw.actions import weather as weather_action
-from safeclaw.core.feeds import FeedReader, PRESET_FEEDS
+from safeclaw.channels.cli import CLIChannel
 from safeclaw.core.analyzer import TextAnalyzer
+from safeclaw.core.crawler import Crawler
 from safeclaw.core.documents import DocumentReader
-from safeclaw.core.notifications import NotificationManager
+from safeclaw.core.engine import SafeClaw
+from safeclaw.core.feeds import PRESET_FEEDS, FeedReader
+from safeclaw.core.summarizer import Summarizer, SummaryMethod
 from safeclaw.plugins import PluginLoader
 
 app = typer.Typer(
@@ -57,7 +55,7 @@ def setup_logging(verbose: bool = False) -> None:
     )
 
 
-def create_engine(config_path: Optional[Path] = None) -> SafeClaw:
+def create_engine(config_path: Path | None = None) -> SafeClaw:
     """Create and configure the SafeClaw engine."""
     engine = SafeClaw(config_path=config_path)
 
@@ -95,7 +93,7 @@ def create_engine(config_path: Optional[Path] = None) -> SafeClaw:
 def main(
     ctx: typer.Context,
     version: bool = typer.Option(False, "--version", "-v", help="Show version"),
-    config: Optional[Path] = typer.Option(
+    config: Path | None = typer.Option(
         None, "--config", "-c", help="Config file path"
     ),
     verbose: bool = typer.Option(False, "--verbose", help="Verbose logging"),
@@ -116,7 +114,7 @@ def main(
         asyncio.run(run_cli(config))
 
 
-async def run_cli(config_path: Optional[Path] = None) -> None:
+async def run_cli(config_path: Path | None = None) -> None:
     """Run interactive CLI."""
     engine = create_engine(config_path)
 
@@ -129,7 +127,7 @@ async def run_cli(config_path: Optional[Path] = None) -> None:
 
 @app.command()
 def run(
-    config: Optional[Path] = typer.Option(None, "--config", "-c"),
+    config: Path | None = typer.Option(None, "--config", "-c"),
     webhook: bool = typer.Option(False, "--webhook", help="Enable webhook server"),
     telegram: bool = typer.Option(False, "--telegram", help="Enable Telegram bot"),
     verbose: bool = typer.Option(False, "--verbose"),
@@ -140,7 +138,7 @@ def run(
 
 
 async def _run_all(
-    config_path: Optional[Path],
+    config_path: Path | None,
     enable_webhook: bool,
     enable_telegram: bool,
 ) -> None:
@@ -217,7 +215,7 @@ def crawl(
     url: str = typer.Argument(..., help="URL to crawl"),
     depth: int = typer.Option(0, "--depth", "-d", help="Crawl depth (0 = single page)"),
     same_domain: bool = typer.Option(True, "--same-domain/--all-domains"),
-    pattern: Optional[str] = typer.Option(None, "--pattern", "-p", help="URL filter pattern"),
+    pattern: str | None = typer.Option(None, "--pattern", "-p", help="URL filter pattern"),
     verbose: bool = typer.Option(False, "--verbose"),
 ):
     """Crawl a URL and extract links."""
@@ -229,7 +227,7 @@ async def _crawl(
     url: str,
     depth: int,
     same_domain: bool,
-    pattern: Optional[str],
+    pattern: str | None,
 ) -> None:
     """Run crawler."""
     if not url.startswith(("http://", "https://")):
@@ -276,13 +274,13 @@ async def _run_webhook(host: str, port: int) -> None:
 
 @app.command()
 def news(
-    category: Optional[str] = typer.Argument(None, help="Category to fetch (tech, world, science, etc.)"),
+    category: str | None = typer.Argument(None, help="Category to fetch (tech, world, science, etc.)"),
     limit: int = typer.Option(10, "--limit", "-n", help="Number of headlines"),
     list_categories: bool = typer.Option(False, "--categories", "-c", help="List available categories"),
-    add_feed: Optional[str] = typer.Option(None, "--add", "-a", help="Add custom RSS feed URL"),
-    feed_name: Optional[str] = typer.Option(None, "--name", help="Name for custom feed"),
-    enable: Optional[str] = typer.Option(None, "--enable", "-e", help="Enable a category"),
-    disable: Optional[str] = typer.Option(None, "--disable", "-d", help="Disable a category"),
+    add_feed: str | None = typer.Option(None, "--add", "-a", help="Add custom RSS feed URL"),
+    feed_name: str | None = typer.Option(None, "--name", help="Name for custom feed"),
+    enable: str | None = typer.Option(None, "--enable", "-e", help="Enable a category"),
+    disable: str | None = typer.Option(None, "--disable", "-d", help="Disable a category"),
     summarize: bool = typer.Option(False, "--summarize", "-s", help="Summarize articles"),
     verbose: bool = typer.Option(False, "--verbose"),
 ):
@@ -292,13 +290,13 @@ def news(
 
 
 async def _news(
-    category: Optional[str],
+    category: str | None,
     limit: int,
     list_categories: bool,
-    add_feed: Optional[str],
-    feed_name: Optional[str],
-    enable: Optional[str],
-    disable: Optional[str],
+    add_feed: str | None,
+    feed_name: str | None,
+    enable: str | None,
+    disable: str | None,
     summarize: bool,
 ) -> None:
     """Run news commands."""
@@ -363,7 +361,7 @@ async def _news(
 
     items = items[:limit]
 
-    console.print(f"[bold]📰 News Headlines[/bold]\n")
+    console.print("[bold]📰 News Headlines[/bold]\n")
 
     current_cat = None
     for item in items:
@@ -446,7 +444,7 @@ async def _analyze(target: str, sentiment: bool, keywords: bool, readability: bo
 @app.command()
 def document(
     path: Path = typer.Argument(..., help="Path to document (PDF, DOCX, TXT, etc.)"),
-    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Save extracted text to file"),
+    output: Path | None = typer.Option(None, "--output", "-o", help="Save extracted text to file"),
     summarize: bool = typer.Option(False, "--summarize", "-s", help="Summarize the document"),
     sentences: int = typer.Option(5, "--sentences", "-n", help="Sentences for summary"),
     verbose: bool = typer.Option(False, "--verbose"),
@@ -456,7 +454,7 @@ def document(
     asyncio.run(_document(path, output, summarize, sentences))
 
 
-async def _document(path: Path, output: Optional[Path], do_summarize: bool, sentences: int) -> None:
+async def _document(path: Path, output: Path | None, do_summarize: bool, sentences: int) -> None:
     """Read document."""
     reader = DocumentReader()
 
@@ -496,7 +494,7 @@ async def _document(path: Path, output: Optional[Path], do_summarize: bool, sent
 @app.command()
 def calendar(
     action: str = typer.Argument("today", help="Action: today, upcoming, week, import"),
-    path: Optional[Path] = typer.Option(None, "--file", "-f", help="ICS file to import"),
+    path: Path | None = typer.Option(None, "--file", "-f", help="ICS file to import"),
     days: int = typer.Option(7, "--days", "-d", help="Days for upcoming events"),
     verbose: bool = typer.Option(False, "--verbose"),
 ):
@@ -505,10 +503,10 @@ def calendar(
     asyncio.run(_calendar(action, path, days))
 
 
-async def _calendar(action: str, path: Optional[Path], days: int) -> None:
+async def _calendar(action: str, path: Path | None, days: int) -> None:
     """Run calendar command."""
     try:
-        from safeclaw.actions.calendar import CalendarParser, CalendarEvent
+        from safeclaw.actions.calendar import CalendarEvent, CalendarParser
     except ImportError:
         console.print("[red]Calendar support not installed. Run: pip install icalendar[/red]")
         return

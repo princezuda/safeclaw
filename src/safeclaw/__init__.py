@@ -8,7 +8,7 @@ __version__ = "0.1.0"
 __author__ = "SafeClaw Contributors"
 
 from safeclaw.core.engine import SafeClaw
-from safeclaw.core.parser import CommandParser
 from safeclaw.core.memory import Memory
+from safeclaw.core.parser import CommandParser
 
 __all__ = ["SafeClaw", "CommandParser", "Memory", "__version__"]

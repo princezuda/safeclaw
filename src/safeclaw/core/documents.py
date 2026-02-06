@@ -13,7 +13,6 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +45,9 @@ class DocumentResult:
     page_count: int
     word_count: int
     char_count: int
-    title: Optional[str] = None
-    author: Optional[str] = None
-    error: Optional[str] = None
+    title: str | None = None
+    author: str | None = None
+    error: str | None = None
 
 
 class DocumentReader:
@@ -285,7 +284,7 @@ class DocumentReader:
                 error="BeautifulSoup not installed. Run: pip install beautifulsoup4",
             )
 
-        with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(path, encoding='utf-8', errors='ignore') as f:
             content = f.read()
 
         soup = BeautifulSoup(content, 'html.parser')
@@ -316,7 +315,7 @@ class DocumentReader:
 
     def _read_text(self, path: Path, format_type: str) -> DocumentResult:
         """Read plain text or markdown file."""
-        with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+        with open(path, encoding='utf-8', errors='ignore') as f:
             text = f.read()
 
         # For markdown, optionally strip formatting

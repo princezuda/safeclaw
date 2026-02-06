@@ -14,7 +14,7 @@ Config in ~/.safeclaw/config.yaml:
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from safeclaw.plugins.base import BasePlugin, PluginInfo
 
@@ -149,7 +149,7 @@ class SmartHomePlugin(BasePlugin):
         return "Could not understand smart home command. Try 'turn on living room lights'"
 
     def _simulate_action(
-        self, action: Optional[str], target: Optional[str], level: Optional[int]
+        self, action: str | None, target: str | None, level: int | None
     ) -> str:
         """Simulate action when no backend is configured."""
         if not action:
@@ -172,7 +172,7 @@ class SmartHomePlugin(BasePlugin):
         return f"[Simulated] {action} {target}"
 
     def _execute_hue(
-        self, action: str, target: Optional[str], level: Optional[int]
+        self, action: str, target: str | None, level: int | None
     ) -> str:
         """Execute command via Philips Hue."""
         try:
@@ -196,7 +196,7 @@ class SmartHomePlugin(BasePlugin):
                     light.on = True
                     light.brightness = int(level * 2.54)  # 0-254 scale
 
-            names = ", ".join(l.name for l in target_lights)
+            names = ", ".join(light.name for light in target_lights)
             if action == "on":
                 return f"Turned ON: {names}"
             elif action == "off":
@@ -209,14 +209,12 @@ class SmartHomePlugin(BasePlugin):
             return f"Hue error: {e}"
 
     def _execute_mqtt(
-        self, action: str, target: Optional[str], level: Optional[int]
+        self, action: str, target: str | None, level: int | None
     ) -> str:
         """Execute command via MQTT (Home Assistant)."""
         try:
             # Home Assistant MQTT convention
             domain = "light"
-            service = "turn_on" if action in ("on", "dim") else "turn_off"
-
             payload = {}
             if level is not None and action == "dim":
                 payload["brightness_pct"] = level

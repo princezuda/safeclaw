@@ -1,9 +1,7 @@
 """File operations action."""
 
-import os
-import shutil
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from safeclaw.actions.base import BaseAction
 
@@ -149,7 +147,7 @@ class FilesAction(BaseAction):
             return f"Cannot read directory: {path}"
 
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 lines = f.readlines()[:max_lines]
                 content = "".join(lines)
                 if len(lines) == max_lines:

@@ -1,12 +1,12 @@
 """Daily briefing action."""
 
 from datetime import datetime
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
 from safeclaw.actions.base import BaseAction
-from safeclaw.core.feeds import FeedReader, Feed
+from safeclaw.core.feeds import Feed, FeedReader
 
 if TYPE_CHECKING:
     from safeclaw.core.engine import SafeClaw

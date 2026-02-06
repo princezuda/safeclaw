@@ -9,7 +9,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import aiosqlite
 
@@ -155,7 +155,7 @@ class Memory:
 
     def __init__(self, db_path: Path):
         self.db_path = db_path
-        self._connection: Optional[aiosqlite.Connection] = None
+        self._connection: aiosqlite.Connection | None = None
 
     async def initialize(self) -> None:
         """Initialize database and create tables."""
@@ -272,7 +272,7 @@ class Memory:
         channel: str,
         text: str,
         parsed: Any,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> int:
         """Store a message in history using prepared statement."""
         assert self._connection is not None
@@ -295,7 +295,7 @@ class Memory:
         self,
         user_id: str,
         limit: int = 50,
-        channel: Optional[str] = None,
+        channel: str | None = None,
     ) -> list[dict[str, Any]]:
         """Retrieve conversation history using prepared statement."""
         assert self._connection is not None
@@ -372,7 +372,7 @@ class Memory:
         channel: str,
         task: str,
         trigger_at: datetime,
-        repeat: Optional[str] = None,
+        repeat: str | None = None,
     ) -> int:
         """Add a reminder using prepared statement."""
         assert self._connection is not None
@@ -390,7 +390,7 @@ class Memory:
         await self._connection.commit()
         return cursor.lastrowid or 0
 
-    async def get_pending_reminders(self, before: Optional[datetime] = None) -> list[dict]:
+    async def get_pending_reminders(self, before: datetime | None = None) -> list[dict]:
         """Get reminders that are due using prepared statement."""
         assert self._connection is not None
 
@@ -431,8 +431,8 @@ class Memory:
         self,
         name: str,
         action: str,
-        params: Optional[dict] = None,
-        secret: Optional[str] = None,
+        params: dict | None = None,
+        secret: str | None = None,
     ) -> None:
         """Register a webhook using prepared statement."""
         assert self._connection is not None
@@ -448,7 +448,7 @@ class Memory:
         )
         await self._connection.commit()
 
-    async def get_webhook(self, name: str) -> Optional[dict]:
+    async def get_webhook(self, name: str) -> dict | None:
         """Get a webhook by name using prepared statement."""
         assert self._connection is not None
 
@@ -496,7 +496,7 @@ class Memory:
         url: str,
         content: str,
         links: list[str],
-        summary: Optional[str] = None,
+        summary: str | None = None,
         ttl_hours: int = 24,
     ) -> None:
         """Cache crawl results using prepared statement."""
@@ -516,7 +516,7 @@ class Memory:
         )
         await self._connection.commit()
 
-    async def get_cached_crawl(self, url: str) -> Optional[dict]:
+    async def get_cached_crawl(self, url: str) -> dict | None:
         """Get cached crawl result if not expired using prepared statement."""
         assert self._connection is not None
 
@@ -538,7 +538,7 @@ class Memory:
         return None
 
     # Key-value store
-    async def set(self, key: str, value: Any, ttl_seconds: Optional[int] = None) -> None:
+    async def set(self, key: str, value: Any, ttl_seconds: int | None = None) -> None:
         """Set a key-value pair using prepared statement."""
         assert self._connection is not None
 
@@ -572,7 +572,7 @@ class Memory:
         user_id: str,
         phrase: str,
         intent: str,
-        params: Optional[dict] = None,
+        params: dict | None = None,
     ) -> None:
         """
         Learn a user's phrase-to-intent mapping.
@@ -615,7 +615,7 @@ class Memory:
 
     async def match_learned_pattern(
         self, user_id: str, phrase: str
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Check if we have an exact learned pattern match for this phrase."""
         assert self._connection is not None
 

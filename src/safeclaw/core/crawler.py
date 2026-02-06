@@ -10,7 +10,6 @@ import logging
 import re
 import socket
 from dataclasses import dataclass, field
-from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -92,12 +91,12 @@ def is_safe_url(url: str) -> tuple[bool, str]:
 class CrawlResult:
     """Result of crawling a URL."""
     url: str
-    title: Optional[str] = None
+    title: str | None = None
     text: str = ""
     links: list[str] = field(default_factory=list)
     images: list[str] = field(default_factory=list)
     status_code: int = 0
-    error: Optional[str] = None
+    error: str | None = None
     depth: int = 0
 
 
@@ -132,7 +131,7 @@ class Crawler:
 
         self._visited: set[str] = set()
         self._robots_cache: dict[str, set[str]] = {}
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
 
     MAX_REDIRECTS = 10
 
@@ -248,9 +247,9 @@ class Crawler:
     async def crawl(
         self,
         start_url: str,
-        max_depth: Optional[int] = None,
+        max_depth: int | None = None,
         same_domain: bool = True,
-        pattern: Optional[str] = None,
+        pattern: str | None = None,
     ) -> list[CrawlResult]:
         """
         Crawl starting from a URL, following links up to max_depth.
@@ -317,7 +316,7 @@ class Crawler:
         self,
         url: str,
         same_domain: bool = False,
-        pattern: Optional[str] = None,
+        pattern: str | None = None,
     ) -> list[str]:
         """
         Get all links from a single page.
@@ -337,12 +336,12 @@ class Crawler:
 
         # Filter by domain
         if same_domain:
-            links = [l for l in links if urlparse(l).netloc == start_domain]
+            links = [link for link in links if urlparse(link).netloc == start_domain]
 
         # Filter by pattern
         if pattern:
             pattern_re = re.compile(pattern)
-            links = [l for l in links if pattern_re.search(l)]
+            links = [link for link in links if pattern_re.search(link)]
 
         return links
 
@@ -355,7 +354,7 @@ class Crawler:
         """Extract domain from URL."""
         return urlparse(url).netloc
 
-    def normalize_url(self, url: str, base_url: Optional[str] = None) -> str:
+    def normalize_url(self, url: str, base_url: str | None = None) -> str:
         """Normalize a URL, resolving relative paths."""
         if base_url:
             url = urljoin(base_url, url)
@@ -364,4 +363,4 @@ class Crawler:
         parsed = urlparse(url)
         return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
 
- 
+

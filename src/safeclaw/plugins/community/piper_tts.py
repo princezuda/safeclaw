@@ -16,12 +16,11 @@ Usage:
 """
 
 import asyncio
+import logging
 import platform
 import shutil
-import subprocess
-import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from safeclaw.plugins.base import BasePlugin, PluginInfo
 
@@ -63,8 +62,8 @@ class PiperTTSPlugin(BasePlugin):
 
     def __init__(self):
         self.enabled = False
-        self.piper_path: Optional[Path] = None
-        self.model_path: Optional[Path] = None
+        self.piper_path: Path | None = None
+        self.model_path: Path | None = None
         self._engine: Any = None
         self._greeted = False
 
@@ -88,7 +87,7 @@ class PiperTTSPlugin(BasePlugin):
         except ImportError:
             self._has_piper_python = False
 
-    def _find_piper(self) -> Optional[Path]:
+    def _find_piper(self) -> Path | None:
         """Find piper executable."""
         # Check PATH
         piper_cmd = shutil.which("piper")
@@ -115,7 +114,7 @@ class PiperTTSPlugin(BasePlugin):
 
         return None
 
-    def _find_model(self) -> Optional[Path]:
+    def _find_model(self) -> Path | None:
         """Find a Piper voice model."""
         # Check common model locations
         model_dirs = [
@@ -250,9 +249,10 @@ class PiperTTSPlugin(BasePlugin):
     async def _speak_python(self, text: str) -> bool:
         """Speak using piper-tts Python package."""
         try:
-            import piper
-            import wave
             import tempfile
+            import wave
+
+            import piper
 
             # Find a model
             model_path = self._find_model()

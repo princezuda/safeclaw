@@ -9,14 +9,14 @@ No GenAI needed! Uses:
 - User-learned patterns from corrections
 """
 
-import re
 import logging
+import re
 from dataclasses import dataclass, field
-from typing import Any, Optional, TYPE_CHECKING
 from datetime import datetime
+from typing import TYPE_CHECKING, Any, Optional
 
 import dateparser
-from rapidfuzz import fuzz, process
+from rapidfuzz import fuzz
 
 if TYPE_CHECKING:
     from safeclaw.core.memory import Memory
@@ -153,12 +153,12 @@ CHAIN_PATTERNS = [
 class ParsedCommand:
     """Result of parsing a user command."""
     raw_text: str
-    intent: Optional[str] = None
+    intent: str | None = None
     confidence: float = 0.0
     params: dict[str, Any] = field(default_factory=dict)
     entities: dict[str, Any] = field(default_factory=dict)
     # For command chaining
-    chain_type: Optional[str] = None  # 'pipe' or 'sequence' or None
+    chain_type: str | None = None  # 'pipe' or 'sequence' or None
     use_previous_output: bool = False  # True if this command should receive previous output
 
 
@@ -505,7 +505,7 @@ class CommandParser:
         self.intents[pattern.intent] = pattern
         logger.debug(f"Registered intent: {pattern.intent}")
 
-    def parse(self, text: str, user_id: Optional[str] = None) -> ParsedCommand:
+    def parse(self, text: str, user_id: str | None = None) -> ParsedCommand:
         """
         Parse user input into a structured command.
 
@@ -560,7 +560,7 @@ class CommandParser:
 
         return result
 
-    def _match_keywords(self, text: str) -> Optional[tuple[str, float]]:
+    def _match_keywords(self, text: str) -> tuple[str, float] | None:
         """Match text against intent keywords using fuzzy matching."""
         best_intent = None
         best_score = 0.0
@@ -660,7 +660,7 @@ class CommandParser:
             return self.intents[intent].examples
         return []
 
-    def _match_phrase_variations(self, text: str) -> Optional[tuple[str, float]]:
+    def _match_phrase_variations(self, text: str) -> tuple[str, float] | None:
         """
         Match text against common phrase variations using fuzzy matching.
 
@@ -696,7 +696,7 @@ class CommandParser:
 
     def _match_learned_patterns(
         self, text: str, user_id: str
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Match text against user's learned patterns using fuzzy matching.
 
@@ -745,7 +745,7 @@ class CommandParser:
         user_id: str,
         phrase: str,
         correct_intent: str,
-        params: Optional[dict] = None,
+        params: dict | None = None,
     ) -> None:
         """
         Learn a correction from user feedback.
@@ -789,7 +789,7 @@ class CommandParser:
         })
         logger.info(f"Learned new pattern: '{phrase}' -> {correct_intent}")
 
-    def _detect_chain(self, text: str) -> Optional[tuple[str, str]]:
+    def _detect_chain(self, text: str) -> tuple[str, str] | None:
         """
         Detect if text contains a command chain pattern.
 
@@ -819,7 +819,7 @@ class CommandParser:
         return ([text], "none")
 
     def parse_chain(
-        self, text: str, user_id: Optional[str] = None
+        self, text: str, user_id: str | None = None
     ) -> CommandChain:
         """
         Parse a potentially chained command.

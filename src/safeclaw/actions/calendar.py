@@ -8,12 +8,10 @@ Supports:
 """
 
 import logging
-import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Optional, TYPE_CHECKING
-from zoneinfo import ZoneInfo
+from typing import TYPE_CHECKING, Any
 
 from safeclaw.actions.base import BaseAction
 
@@ -21,7 +19,8 @@ logger = logging.getLogger(__name__)
 
 # Try imports
 try:
-    from icalendar import Calendar as ICalendar, Event as ICalEvent
+    from icalendar import Calendar as ICalendar
+    from icalendar import Event as ICalEvent
     HAS_ICALENDAR = True
 except ImportError:
     HAS_ICALENDAR = False
@@ -111,7 +110,7 @@ class CalendarParser:
 
         return events
 
-    def _parse_event(self, component) -> Optional[CalendarEvent]:
+    def _parse_event(self, component) -> CalendarEvent | None:
         """Parse a VEVENT component."""
         try:
             # Get UID
@@ -229,7 +228,7 @@ class CalendarAction(BaseAction):
     description = "View and manage calendar events"
 
     def __init__(self, allowed_paths: list[str] | None = None):
-        self._parser: Optional[CalendarParser] = None
+        self._parser: CalendarParser | None = None
         self._events: list[CalendarEvent] = []
         # Default to home directory for security
         self.allowed_paths = [

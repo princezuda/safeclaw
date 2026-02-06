@@ -8,10 +8,10 @@ Create plugins by:
 4. Place in plugins/official/ or plugins/community/
 """
 
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional
-import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +90,7 @@ class BasePlugin(ABC):
         pass
 
     @classmethod
-    def get_intent_pattern(cls) -> Optional[dict]:
+    def get_intent_pattern(cls) -> dict | None:
         """
         Convert plugin info to an IntentPattern dict for the parser.
         Returns None if no keywords/patterns defined.

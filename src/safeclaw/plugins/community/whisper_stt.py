@@ -18,12 +18,13 @@ Usage:
 """
 
 import asyncio
+import logging
 import platform
 import shutil
 import tempfile
-import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Optional, Callable
+from typing import Any
 
 from safeclaw.plugins.base import BasePlugin, PluginInfo
 
@@ -73,8 +74,8 @@ class WhisperSTTPlugin(BasePlugin):
         self._model_name = "base"  # tiny, base, small, medium, large
         self._has_faster_whisper = False
         self._has_whisper = False
-        self._whisper_cpp_path: Optional[Path] = None
-        self._on_transcription: Optional[Callable[[str], None]] = None
+        self._whisper_cpp_path: Path | None = None
+        self._on_transcription: Callable[[str], None] | None = None
 
     def on_load(self, engine: Any) -> None:
         """Called when plugin loads. Check for Whisper installation."""
@@ -105,7 +106,7 @@ class WhisperSTTPlugin(BasePlugin):
         if engine.config:
             self._model_name = engine.config.get("whisper", {}).get("model", "base")
 
-    def _find_whisper_cpp(self) -> Optional[Path]:
+    def _find_whisper_cpp(self) -> Path | None:
         """Find whisper.cpp executable."""
         # Check PATH
         for name in ["whisper", "whisper-cpp", "main"]:
@@ -339,7 +340,7 @@ class WhisperSTTPlugin(BasePlugin):
             logger.error(f"Transcription failed: {e}")
             return f"[red]Transcription failed: {e}[/red]"
 
-    async def _record_audio(self, duration: float = 5.0, sample_rate: int = 16000) -> Optional[str]:
+    async def _record_audio(self, duration: float = 5.0, sample_rate: int = 16000) -> str | None:
         """
         Record audio from microphone.
 
@@ -352,9 +353,10 @@ class WhisperSTTPlugin(BasePlugin):
 
         # Try sounddevice first
         try:
-            import sounddevice as sd
-            import numpy as np
             import wave
+
+            import numpy as np
+            import sounddevice as sd
 
             logger.info(f"Recording {duration}s of audio...")
 
@@ -456,7 +458,7 @@ class WhisperSTTPlugin(BasePlugin):
         Path(temp_path).unlink(missing_ok=True)
         return None
 
-    async def _transcribe(self, audio_path: str) -> Optional[str]:
+    async def _transcribe(self, audio_path: str) -> str | None:
         """Transcribe audio file to text."""
         # Ensure model is loaded
         if self._whisper_model is None and (self._has_faster_whisper or self._has_whisper):
@@ -498,7 +500,7 @@ class WhisperSTTPlugin(BasePlugin):
 
         return None
 
-    async def _transcribe_cpp(self, audio_path: str) -> Optional[str]:
+    async def _transcribe_cpp(self, audio_path: str) -> str | None:
         """Transcribe using whisper.cpp."""
         # Find model file
         model_paths = [

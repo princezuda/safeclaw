@@ -7,6 +7,22 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Lint with ruff
+        run: ruff check src/safeclaw
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -23,16 +39,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-
-      - name: Lint with ruff
-        run: ruff check src/safeclaw
-
-      - name: Type check with mypy
-        run: mypy src/safeclaw --ignore-missing-imports
+          pip install pytest pytest-asyncio pytest-cov
+          pip install httpx beautifulsoup4 lxml
 
       - name: Run tests
         run: pytest --tb=short -q

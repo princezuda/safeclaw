@@ -1,15 +1,15 @@
 """Telegram channel adapter."""
 
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 try:
     from telegram import Update
     from telegram.ext import (
         Application,
         CommandHandler,
-        MessageHandler,
         ContextTypes,
+        MessageHandler,
         filters,
     )
     HAS_TELEGRAM = True
@@ -43,7 +43,7 @@ class TelegramChannel(BaseChannel):
         self,
         engine: "SafeClaw",
         token: str,
-        allowed_users: Optional[list[int]] = None,
+        allowed_users: list[int] | None = None,
     ):
         if not HAS_TELEGRAM:
             raise ImportError(
@@ -54,7 +54,7 @@ class TelegramChannel(BaseChannel):
         super().__init__(engine)
         self.token = token
         self.allowed_users = set(allowed_users) if allowed_users else None
-        self.app: Optional[Application] = None
+        self.app: Application | None = None
 
     async def start(self) -> None:
         """Start the Telegram bot."""

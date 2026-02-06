@@ -4,11 +4,10 @@ SafeClaw Vision - Object Detection (YOLO) and OCR.
 ML without LLMs - runs locally.
 """
 
+import io
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
-import io
 
 logger = logging.getLogger(__name__)
 
@@ -63,14 +62,14 @@ class OCRResult:
     """OCR extraction result."""
     text: str
     confidence: float
-    language: Optional[str] = None
+    language: str | None = None
 
 
 @dataclass
 class VisionResult:
     """Combined vision analysis result."""
     detections: list[Detection]
-    ocr_text: Optional[str] = None
+    ocr_text: str | None = None
     labels: list[str] = None
 
     def __post_init__(self):
@@ -196,7 +195,7 @@ class OCRProcessor:
     def extract_text(
         self,
         image: str | Path | bytes,
-        language: Optional[str] = None,
+        language: str | None = None,
     ) -> OCRResult:
         """
         Extract text from image.

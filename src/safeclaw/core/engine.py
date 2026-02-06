@@ -6,13 +6,14 @@ Coordinates channels, actions, triggers, and the command parser.
 
 import asyncio
 import logging
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 
 import yaml
 
-from safeclaw.core.parser import CommandParser, CommandChain, ParsedCommand
 from safeclaw.core.memory import Memory
+from safeclaw.core.parser import CommandParser
 from safeclaw.core.scheduler import Scheduler
 
 logger = logging.getLogger(__name__)
@@ -32,8 +33,8 @@ class SafeClaw:
 
     def __init__(
         self,
-        config_path: Optional[Path] = None,
-        data_dir: Optional[Path] = None,
+        config_path: Path | None = None,
+        data_dir: Path | None = None,
     ):
         self.config_path = config_path or Path("config/config.yaml")
         self.data_dir = data_dir or Path.home() / ".safeclaw"
@@ -100,7 +101,7 @@ class SafeClaw:
         text: str,
         channel: str,
         user_id: str,
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ) -> str:
         """
         Process an incoming message and return a response.
@@ -167,7 +168,7 @@ class SafeClaw:
         logger.info(f"Executing command chain: {len(chain.commands)} commands ({chain.chain_type})")
 
         results: list[str] = []
-        previous_output: Optional[str] = None
+        previous_output: str | None = None
 
         for i, cmd in enumerate(chain.commands):
             # Store each command in memory

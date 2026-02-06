@@ -1,6 +1,6 @@
 """Web crawling action."""
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from safeclaw.actions.base import BaseAction
 from safeclaw.core.crawler import Crawler
@@ -83,13 +83,13 @@ class CrawlAction(BaseAction):
             if same_domain:
                 from urllib.parse import urlparse
                 start_domain = urlparse(url).netloc
-                links = [l for l in links if urlparse(l).netloc == start_domain]
+                links = [link for link in links if urlparse(link).netloc == start_domain]
 
             # Filter by pattern if provided
             if pattern:
                 import re
                 pattern_re = re.compile(pattern)
-                links = [l for l in links if pattern_re.search(l)]
+                links = [link for link in links if pattern_re.search(link)]
 
         if not links:
             return f"No links found on {url}"

@@ -4,19 +4,17 @@ SafeClaw Email Action - IMAP/SMTP email integration.
 No API keys required - uses standard email protocols.
 """
 
-import asyncio
 import email
+import imaplib
 import logging
 import re
-import ssl
+import smtplib
 from dataclasses import dataclass
 from datetime import datetime
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from email.header import decode_header
-from typing import Any, Optional, TYPE_CHECKING
-import imaplib
-import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from typing import TYPE_CHECKING, Any
 
 from safeclaw.actions.base import BaseAction
 
@@ -33,9 +31,9 @@ class EmailMessage:
     subject: str
     sender: str
     recipient: str
-    date: Optional[datetime]
+    date: datetime | None
     body: str
-    body_html: Optional[str] = None
+    body_html: str | None = None
     is_read: bool = False
     has_attachments: bool = False
 
@@ -107,7 +105,7 @@ class EmailClient:
 
     def __init__(self, config: EmailConfig):
         self.config = config
-        self._imap: Optional[imaplib.IMAP4_SSL] = None
+        self._imap: imaplib.IMAP4_SSL | None = None
 
     def _decode_header_value(self, header: str) -> str:
         """Decode email header value."""
@@ -342,7 +340,7 @@ class EmailAction(BaseAction):
     description = "Check and send emails"
 
     def __init__(self):
-        self._client: Optional[EmailClient] = None
+        self._client: EmailClient | None = None
 
     async def execute(
         self,
@@ -384,7 +382,7 @@ class EmailAction(BaseAction):
         self,
         user_id: str,
         engine: "SafeClaw",
-    ) -> Optional[EmailConfig]:
+    ) -> EmailConfig | None:
         """Get email configuration for user."""
         config_data = await engine.memory.get_preference(user_id, "email_config")
         if not config_data:

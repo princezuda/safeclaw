@@ -5,8 +5,9 @@ Uses APScheduler for robust scheduling. No cloud required.
 """
 
 import logging
+from collections.abc import Callable
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -94,10 +95,10 @@ class Scheduler:
         self,
         name: str,
         func: Callable,
-        seconds: Optional[int] = None,
-        minutes: Optional[int] = None,
-        hours: Optional[int] = None,
-        days: Optional[int] = None,
+        seconds: int | None = None,
+        minutes: int | None = None,
+        hours: int | None = None,
+        days: int | None = None,
     ) -> str:
         """Add an interval-based recurring job."""
         kwargs: dict[str, int] = {}
@@ -116,7 +117,7 @@ class Scheduler:
         self,
         name: str,
         func: Callable,
-        cron_expr: Optional[str] = None,
+        cron_expr: str | None = None,
         **cron_args: Any,
     ) -> str:
         """
@@ -183,7 +184,7 @@ class Scheduler:
             })
         return jobs
 
-    def get_job(self, name: str) -> Optional[dict[str, Any]]:
+    def get_job(self, name: str) -> dict[str, Any] | None:
         """Get job details by name."""
         if name not in self._jobs:
             return None

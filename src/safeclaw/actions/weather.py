@@ -7,7 +7,7 @@ Uses free services:
 """
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -43,8 +43,8 @@ async def get_weather_wttr(location: str, units: str = "imperial") -> str:
 async def get_weather_openmeteo(
     location: str,
     units: str = "imperial",
-    lat: Optional[float] = None,
-    lon: Optional[float] = None,
+    lat: float | None = None,
+    lon: float | None = None,
 ) -> str:
     """
     Fetch weather from Open-Meteo - free, no API key, more detailed.

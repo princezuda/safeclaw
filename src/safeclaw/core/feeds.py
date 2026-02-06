@@ -5,19 +5,18 @@ No AI required - uses feedparser for parsing, sumy for summarization.
 """
 
 import asyncio
-import hashlib
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Optional
-from html import unescape
 import re
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from html import unescape
+from typing import Any
 
-import httpx
 import feedparser
+import httpx
 
-from safeclaw.core.summarizer import Summarizer, SummaryMethod
 from safeclaw.core.crawler import Crawler
+from safeclaw.core.summarizer import Summarizer, SummaryMethod
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class FeedItem:
     title: str
     link: str
     description: str = ""
-    published: Optional[datetime] = None
+    published: datetime | None = None
     author: str = ""
     feed_name: str = ""
     feed_category: str = ""
@@ -44,7 +43,7 @@ class Feed:
     category: str = "general"
     enabled: bool = True
     update_interval: int = 3600  # seconds
-    last_fetched: Optional[datetime] = None
+    last_fetched: datetime | None = None
     etag: str = ""
     modified: str = ""
 
@@ -155,12 +154,11 @@ class FeedReader:
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean
 
-    def _parse_date(self, entry: dict) -> Optional[datetime]:
+    def _parse_date(self, entry: dict) -> datetime | None:
         """Parse date from feed entry."""
         for key in ['published_parsed', 'updated_parsed', 'created_parsed']:
             if key in entry and entry[key]:
                 try:
-                    import time
                     return datetime(*entry[key][:6])
                 except (TypeError, ValueError):
                     pass
@@ -337,7 +335,7 @@ class FeedReader:
             }
         return result
 
-    async def fetch_and_summarize_article(self, url: str) -> Optional[FeedItem]:
+    async def fetch_and_summarize_article(self, url: str) -> FeedItem | None:
         """Fetch full article content and summarize it."""
         async with Crawler() as crawler:
             result = await crawler.fetch(url)

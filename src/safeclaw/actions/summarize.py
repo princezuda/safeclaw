@@ -1,6 +1,6 @@
 """Summarization action using sumy."""
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from safeclaw.actions.base import BaseAction
 from safeclaw.core.crawler import Crawler

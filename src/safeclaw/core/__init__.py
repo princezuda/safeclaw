@@ -1,12 +1,12 @@
 """Core SafeClaw components."""
 
-from safeclaw.core.engine import SafeClaw
-from safeclaw.core.parser import CommandParser
-from safeclaw.core.memory import Memory
-from safeclaw.core.scheduler import Scheduler
 from safeclaw.core.analyzer import TextAnalyzer
 from safeclaw.core.documents import DocumentReader
+from safeclaw.core.engine import SafeClaw
+from safeclaw.core.memory import Memory
 from safeclaw.core.notifications import NotificationManager
+from safeclaw.core.parser import CommandParser
+from safeclaw.core.scheduler import Scheduler
 
 __all__ = [
     "SafeClaw",
@@ -26,7 +26,7 @@ except ImportError:
     pass  # pip install safeclaw[nlp]
 
 try:
-    from safeclaw.core.vision import VisionProcessor, ObjectDetector, OCRProcessor
+    from safeclaw.core.vision import ObjectDetector, OCRProcessor, VisionProcessor
     __all__.extend(["VisionProcessor", "ObjectDetector", "OCRProcessor"])
 except ImportError:
     pass  # pip install safeclaw[vision]
