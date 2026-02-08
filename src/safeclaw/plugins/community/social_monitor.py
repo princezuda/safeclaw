@@ -20,11 +20,10 @@ import asyncio
 import json
 import logging
 import re
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
-from dataclasses import dataclass, field, asdict
-from urllib.parse import urlparse
+from typing import Any
 
 from safeclaw.plugins.base import BasePlugin, PluginInfo
 
@@ -36,10 +35,10 @@ class WatchedAccount:
     """A monitored social media account."""
     username: str
     platform: str  # twitter, mastodon, bluesky, rss
-    display_name: Optional[str] = None
-    last_checked: Optional[str] = None
-    last_post_id: Optional[str] = None
-    url: Optional[str] = None
+    display_name: str | None = None
+    last_checked: str | None = None
+    last_post_id: str | None = None
+    url: str | None = None
     added: str = field(default_factory=lambda: datetime.now().isoformat())
 
 
@@ -49,8 +48,8 @@ class Post:
     id: str
     author: str
     content: str
-    timestamp: Optional[str] = None
-    url: Optional[str] = None
+    timestamp: str | None = None
+    url: str | None = None
     is_mention: bool = False
     is_reply: bool = False
 
@@ -97,7 +96,7 @@ class SocialMonitorPlugin(BasePlugin):
 
     def __init__(self):
         self._engine: Any = None
-        self._data_file: Optional[Path] = None
+        self._data_file: Path | None = None
         self.accounts: dict[str, WatchedAccount] = {}
         self._http_client: Any = None
 
@@ -310,7 +309,7 @@ class SocialMonitorPlugin(BasePlugin):
                     try:
                         dt = datetime.fromisoformat(acc.last_checked)
                         last = f" (checked {dt.strftime('%b %d %H:%M')})"
-                    except:
+                    except ValueError:
                         pass
                 lines.append(f"  • @{acc.username}{last}")
             lines.append("")
@@ -338,7 +337,7 @@ class SocialMonitorPlugin(BasePlugin):
         platform: str,
         username: str,
         limit: int = 20
-    ) -> Optional[list[Post]]:
+    ) -> list[Post] | None:
         """Fetch posts from a platform."""
         try:
             if platform == "twitter":
@@ -369,7 +368,7 @@ class SocialMonitorPlugin(BasePlugin):
                 return None
         return self._http_client
 
-    async def _fetch_twitter(self, username: str, limit: int) -> Optional[list[Post]]:
+    async def _fetch_twitter(self, username: str, limit: int) -> list[Post] | None:
         """Fetch Twitter posts via Nitter RSS."""
         client = await self._get_http_client()
         if not client:
@@ -396,7 +395,7 @@ class SocialMonitorPlugin(BasePlugin):
         # All instances failed
         return None
 
-    async def _fetch_mastodon(self, username: str, limit: int) -> Optional[list[Post]]:
+    async def _fetch_mastodon(self, username: str, limit: int) -> list[Post] | None:
         """Fetch Mastodon posts via public API."""
         client = await self._get_http_client()
         if not client:
@@ -453,19 +452,19 @@ class SocialMonitorPlugin(BasePlugin):
             logger.error(f"Mastodon fetch failed: {e}")
             return None
 
-    async def _fetch_bluesky(self, username: str, limit: int) -> Optional[list[Post]]:
+    async def _fetch_bluesky(self, username: str, limit: int) -> list[Post] | None:
         """Fetch Bluesky posts via AT Protocol."""
         client = await self._get_http_client()
         if not client:
             return None
 
         # Ensure handle format
-        if not "." in username:
+        if "." not in username:
             username = f"{username}.bsky.social"
 
         try:
             # Use public API
-            url = f"https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed"
+            url = "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed"
             params = {"actor": username, "limit": limit}
 
             response = await client.get(url, params=params)
