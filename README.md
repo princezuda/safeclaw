@@ -1,87 +1,160 @@
 # SafeClaw 🐾
 
-**Privacy-first personal automation assistant - no GenAI required.**
+**The zero-cost alternative to OpenClaw. No LLM. No API bills. No prompt injection. Runs on any machine.**
 
-SafeClaw is an open-source alternative to cloud-based AI assistants that runs entirely on your machine. It does 90% of what Clawdbot/OpenClaw does using traditional programming - rule-based parsing, webhooks, web crawling, and extractive summarization.
+While OpenClaw users are burning [$200/day](https://www.notebookcheck.net/Free-to-use-AI-tool-can-burn-through-hundreds-of-Dollars-per-day-OpenClaw-has-absurdly-high-token-use.1219925.0.html) and [$3,600/month](https://dev.to/thegdsks/i-tried-the-free-ai-agent-with-124k-github-stars-heres-my-500-reality-check-2885) on API tokens, SafeClaw delivers 90% of the functionality using traditional programming — rule-based parsing, ML pipelines, and local-first tools. **Your API bill: $0. Forever.**
+
+SafeClaw uses VADER, spaCy, sumy, YOLO, Whisper, Piper, and other battle-tested ML techniques instead of generative AI. The result: deterministic, predictable, private, and completely free to run.
+
+---
+
+## Why SafeClaw?
+
+| | SafeClaw | OpenClaw |
+|---|---|---|
+| **Monthly cost** | **$0** | $100–$3,600+ |
+| **Requires LLM** | No | Yes |
+| **Prompt injection risk** | **None** | Yes |
+| **Works offline** | **Yes** (core features) | No |
+| **Runs on any machine** | **Yes** (Linux, macOS, Windows) | Needs powerful hardware or cloud APIs |
+| **Deterministic output** | **Yes** | No (LLM responses vary) |
+| **Privacy** | **Local by default** (external only when you ask, e.g. weather) | Data sent to API providers |
+
+---
 
 ## Features
 
-### 🔒 Privacy First
-- **100% self-hosted** - Your data never leaves your machine
-- **No API keys required** - Works completely offline
-- **No cloud dependencies** - Everything runs locally
+### 🗣️ Voice Control
+* **Speech-to-Text** — Whisper STT runs locally, no cloud transcription
+* **Text-to-Speech** — Piper TTS for natural voice output, completely offline
+* **Voice-first workflow** — Talk to SafeClaw like you would any assistant
 
-### 🤖 No GenAI Required
-- **Rule-based command parsing** - Keyword matching, regex, fuzzy search
-- **Extractive summarization** - Uses [sumy](https://github.com/miso-belica/sumy) (LSA, LexRank, TextRank)
-- **Pattern matching** - dateparser for natural language dates
+### 🏠 Smart Home & Device Control
+* **Smart home integration** — Control your connected devices
+* **Bluetooth device control** — Discover and manage Bluetooth devices
+* **Network scanning** — Device discovery on your local network
 
-### 📡 Multi-Channel
-- **CLI** - Interactive command line interface
-- **Telegram** - Bot integration
-- **Discord** - (coming soon)
-- **Slack** - (coming soon)
-- **Webhooks** - Inbound/outbound webhook support
+### 📱 Social Media Intelligence
+* **Twitter/X summarization** — Add accounts, get summaries of their activity
+* **Mastodon summarization** — Follow and summarize fediverse accounts
+* **Bluesky summarization** — Track and summarize Bluesky feeds
+* No API tokens needed for public content
 
 ### 📰 RSS News Aggregation
-- **Preset categories** - Tech, World, Science, Business, Programming, Security, Linux, AI
-- **50+ feeds included** - Hacker News, Ars Technica, BBC, Reuters, Nature, and more
-- **Custom feeds** - Import your own RSS/Atom feeds
-- **Auto-summarization** - Summarize articles with sumy (no AI!)
-- **Per-user preferences** - Each user can customize their news sources
+* **50+ preset feeds** — Hacker News, Ars Technica, BBC, Reuters, Nature, and more
+* **8 categories** — Tech, World, Science, Business, Programming, Security, Linux, AI
+* **Custom feeds** — Import any RSS/Atom feed
+* **Auto-summarization** — Extractive summaries with sumy (no AI)
+* **Per-user preferences** — Customize your news sources
+
+### 🔒 Privacy First
+* **Self-hosted by default** — Your data stays local unless you explicitly request external info (like weather)
+* **No API keys required** — Core features work completely offline
+* **No cloud AI dependencies** — No tokens sent to OpenAI, Anthropic, or Google
+* **No prompt injection** — No LLM means no injection attacks
+
+### 📡 Multi-Channel
+* **CLI** — Interactive command line with Rich formatting
+* **Telegram** — Full bot integration
+* **Discord** — Coming soon
+* **Slack** — Coming soon
+* **Webhooks** — Inbound and outbound support
 
 ### ⚡ Automation
-- **Web crawling** - Extract links and content from websites
-- **Summarization** - Summarize articles without AI
-- **Reminders** - Natural language time parsing
-- **Shell commands** - Sandboxed command execution
-- **File operations** - Search, list, read files
-- **Cron jobs** - Scheduled tasks
-- **Daily briefings** - Weather, reminders, news from your RSS feeds
+* **Command chaining** — Combine actions naturally: "read my email and remind me at 3pm"
+* **Web crawling** — Async crawling with depth limits and domain filtering
+* **Summarization** — LexRank, TextRank, LSA, Luhn algorithms
+* **Reminders** — Natural language time parsing with dateparser
+* **Shell commands** — Sandboxed command execution
+* **File operations** — Search, list, read files
+* **Cron jobs** — Scheduled task automation
+* **Daily briefings** — Weather, reminders, news from your feeds
 
-### 📊 Text Analysis (No ML!)
-- **VADER Sentiment** - Lexicon-based sentiment analysis
-- **Keyword Extraction** - TF-IDF style extraction
-- **Readability Scoring** - Flesch-Kincaid metrics
+### 📊 Text Analysis
+* **VADER Sentiment** — Lexicon-based sentiment analysis
+* **Keyword Extraction** — TF-IDF style extraction
+* **Readability Scoring** — Flesch-Kincaid metrics
 
 ### 📧 Email Integration
-- **IMAP Support** - Read emails from Gmail, Outlook, Yahoo
-- **SMTP Support** - Send emails
-- **Standard Protocols** - No API keys required
+* **IMAP Support** — Read emails from Gmail, Outlook, Yahoo
+* **SMTP Support** — Send emails
+* **Standard protocols** — No API keys required
 
 ### 📅 Calendar Support
-- **ICS Files** - Import and parse .ics calendar files
-- **CalDAV** - Connect to Google Calendar, iCloud (optional)
-- **Event Filtering** - Today, upcoming, by date range
+* **ICS Files** — Import and parse .ics calendar files
+* **CalDAV** — Connect to Google Calendar, iCloud (optional)
+* **Event filtering** — Today, upcoming, by date range
 
 ### 📄 Document Reading
-- **PDF** - Extract text with PyMuPDF
-- **DOCX** - Microsoft Word documents
-- **HTML/Markdown/TXT** - Plain text formats
+* **PDF** — Text extraction with PyMuPDF
+* **DOCX** — Microsoft Word documents
+* **HTML/Markdown/TXT** — Plain text formats
 
 ### 🔔 Notifications
-- **Desktop Notifications** - Cross-platform (macOS, Windows, Linux)
-- **Priority Levels** - Low, normal, high, urgent
-- **Rate Limiting** - Prevent notification spam
+* **Desktop notifications** — Cross-platform (macOS, Windows, Linux)
+* **Priority levels** — Low, normal, high, urgent
+* **Rate limiting** — Prevent notification spam
+
+### 👁️ Optional ML Features
+* **NLP** — spaCy named entity recognition (~50MB)
+* **Vision** — YOLO object detection + OCR (~2GB)
+* **OCR** — Tesseract text extraction from images (lightweight)
+
+### 🥚 Easter Eggs
+* Built-in personality and hidden surprises — because tools should be fun
+
+---
+
+## Full Comparison: SafeClaw vs OpenClaw
+
+| Feature | SafeClaw | OpenClaw |
+|---|---|---|
+| Self-hosted | ✅ | ✅ |
+| Cross-platform (Linux, macOS, Windows) | ✅ | ✅ |
+| No AI/LLM required | ✅ | ❌ |
+| Offline capable | ✅ | ❌ |
+| Zero API cost | ✅ | ❌ |
+| No prompt injection | ✅ | ❌ |
+| Privacy-first | ✅ (local by default) | ✅ |
+| Voice (STT/TTS) | ✅ (Whisper + Piper, local) | ✅ (ElevenLabs, paid API) |
+| Smart home control | ✅ | ✅ (via skills) |
+| Bluetooth control | ✅ | ❌ |
+| Network scanning | ✅ | ❌ |
+| Social media summaries | ✅ (Twitter, Mastodon, Bluesky) | ❌ (requires separate skills) |
+| Multi-channel | ✅ (CLI, Telegram, Webhooks) | ✅ (13+ platforms) |
+| Web crawling | ✅ | ✅ |
+| Summarization | ✅ (extractive) | ✅ (AI-generated) |
+| RSS/News feeds | ✅ (50+ feeds) | ✅ (via skills) |
+| Sentiment analysis | ✅ (VADER) | ✅ (AI) |
+| Email integration | ✅ | ✅ |
+| Calendar support | ✅ | ✅ |
+| Document reading | ✅ | ✅ |
+| Desktop notifications | ✅ | ✅ |
+| Object detection | ✅ (YOLO) | ❌ |
+| OCR | ✅ (Tesseract) | ❌ |
+| Cron jobs | ✅ | ✅ |
+| Webhooks | ✅ | ✅ |
+| Plugin system | ✅ | ✅ (5,700+ skills) |
+| Free-form chat | ❌ | ✅ |
+| Creative writing | ❌ | ✅ |
+| Command chaining | ✅ ("read email and remind me at 3pm") | ✅ |
+| Autonomous multi-step tasks | ❌ | ✅ |
+| Self-writing skills | ❌ | ✅ |
+| Browser automation | ❌ | ✅ |
+
+---
 
 ## Installation
 
-### Using pipx (recommended for most users)
+### Using pipx (recommended)
 
-**Linux:**
 ```bash
 # Install pipx if needed
+# Linux:
 sudo apt install pipx
-pipx ensurepath
-
-# Install SafeClaw
-pipx install safeclaw
-```
-
-**macOS:**
-```bash
-# Install pipx if needed
+# macOS:
 brew install pipx
+
 pipx ensurepath
 
 # Install SafeClaw
@@ -102,32 +175,12 @@ pip install safeclaw
 ### From source
 
 ```bash
-git clone https://github.com/safeclaw/safeclaw.git
+git clone https://github.com/princezuda/safeclaw.git
 cd safeclaw
 pip install -e .
 ```
 
-### macOS Dependencies
-
-SafeClaw works on macOS out of the box for core features. For optional audio/voice features:
-
-```bash
-# Text-to-speech (system 'say' command works by default)
-# For Piper TTS:
-pip install piper-tts
-
-# Audio recording (for Whisper STT)
-pip install sounddevice
-# Or install SoX for command-line recording:
-brew install sox
-
-# OCR support
-brew install tesseract
-```
-
 ### Optional ML Features
-
-For users with more disk space:
 
 ```bash
 # NLP - spaCy named entity recognition (~50MB)
@@ -143,11 +196,11 @@ pip install safeclaw[ocr]
 pip install safeclaw[ml]
 ```
 
-**Requirements:** Python 3.11+, macOS or Linux, ~50MB disk (base), ~2GB additional for vision features
+**Requirements:** Python 3.11+, ~50MB disk (base), ~2GB additional for vision features. Runs on Linux, macOS, and Windows.
+
+---
 
 ## Quick Start
-
-### Interactive CLI
 
 ```bash
 # Start interactive mode
@@ -170,6 +223,7 @@ safeclaw --verbose
 > remind me to call mom tomorrow at 3pm
 > morning briefing                  # Includes news from your feeds!
 > check my email                    # View inbox (requires setup)
+> read my email and remind me at 3pm # Chain commands naturally
 > calendar today                    # Today's events from .ics
 > analyze sentiment of this text    # VADER sentiment analysis
 > read document.pdf                 # Extract text from documents
@@ -179,40 +233,42 @@ safeclaw --verbose
 ### CLI Commands
 
 ```bash
-# Get news headlines
-safeclaw news                       # From enabled categories
+# News
+safeclaw news                       # Headlines from enabled categories
 safeclaw news tech                  # Tech news only
 safeclaw news --categories          # List all categories
 safeclaw news world -n 20           # 20 world news headlines
 safeclaw news --add https://blog.example.com/rss --name "My Blog"
-safeclaw news -s                    # With summaries
+safeclaw news -s                    # With auto-summarization
 
-# Summarize a URL
+# Summarize
 safeclaw summarize https://example.com/article -n 5
 
-# Crawl a website
+# Crawl
 safeclaw crawl https://example.com --depth 2
 
-# Analyze text (sentiment, keywords, readability)
+# Text analysis
 safeclaw analyze "This product is amazing! I love it."
 safeclaw analyze document.txt --no-readability
 
-# Read documents (PDF, DOCX, TXT, MD, HTML)
+# Documents
 safeclaw document report.pdf
 safeclaw document paper.docx --summarize -n 5
 safeclaw document notes.md --output extracted.txt
 
-# Calendar (ICS files)
+# Calendar
 safeclaw calendar import --file calendar.ics
 safeclaw calendar today
 safeclaw calendar upcoming --days 14
 
-# Start webhook server
+# Webhooks
 safeclaw webhook --port 8765
 
 # Initialize config
 safeclaw init
 ```
+
+---
 
 ## Configuration
 
@@ -243,60 +299,9 @@ actions:
     enabled: true
     allowed_paths:
       - "~"
-  weather:
-    enabled: true
-    provider: "wttr"  # or "open-meteo" - both free, no API key!
-    units: "imperial"  # or "metric"
-    default_location: "New York"
 ```
 
-### Weather (No API Key Needed)
-
-SafeClaw uses **[wttr.in](https://wttr.in)** for weather - a free service that requires no API key:
-
-```
-> weather
-> weather in Paris
-> what's the weather in Tokyo
-```
-
-**Alternative: Open-Meteo** (also free, no key):
-Add to config (`~/.safeclaw/config.yaml`) if you prefer Open-Meteo:
-```yaml
-actions:
-  weather:
-    enabled: true
-    provider: "open-meteo"  # or "wttr" (default)
-    units: "imperial"  # or "metric" for Celsius
-    default_location: "New York"
-```
-
-Both options:
-- ✅ 100% free
-- ✅ No API key required
-- ✅ No sign-up needed
-
-### Command Chaining
-
-Chain multiple commands together using pipes or sequences:
-
-**Pipes** - Pass output from one command to the next:
-```
-> crawl https://example.com | summarize
-> crawl site.com -> summarize it -> email to me
-```
-
-**Sequences** - Run commands independently:
-```
-> check email; remind me to reply
-> news and then weather
-> crawl site.com then summarize
-```
-
-Supported chain operators:
-- `|` or `->` - Pipe (passes output)
-- `;` - Sequence (independent)
-- `and then` / `then` - Natural language sequence
+---
 
 ## Architecture
 
@@ -314,295 +319,153 @@ Supported chain operators:
 │  │ • Discord   │  │ • Summarize │  │ • Events    │  │ • Feeds    │  │
 │  └─────────────┘  │ • Reminder  │  └─────────────┘  │ • Crawler  │  │
 │                   │ • Briefing  │                   │ • Summary  │  │
-│                   │ • News/RSS  │                   └────────────┘  │
-│                   │ • Email     │                                    │
-│                   │ • Calendar  │                                    │
-│                   └─────────────┘                                    │
+│  ┌─────────────┐  │ • News/RSS  │  ┌─────────────┐  │ • Voice    │  │
+│  │   VOICE     │  │ • Email     │  │  DEVICES    │  │ • Social   │  │
+│  ├─────────────┤  │ • Calendar  │  ├─────────────┤  └────────────┘  │
+│  │ • Whisper   │  │ • Social    │  │ • Bluetooth │                  │
+│  │ • Piper TTS │  └─────────────┘  │ • Network   │                  │
+│  └─────────────┘                   │ • Smart Home│                  │
+│                                    └─────────────┘                  │
 │                                                                      │
-│  ┌───────────────────────────────────────────────────────────┐      │
-│  │                  COMMAND PARSER                            │      │
-│  │   Keyword + Regex + Fuzzy Match + Date Parser + NLP       │      │
-│  └───────────────────────────────────────────────────────────┘      │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │                  COMMAND PARSER                                │  │
+│  │   Keyword + Regex + Fuzzy Match + Date Parser + NLP           │  │
+│  └───────────────────────────────────────────────────────────────┘  │
 │                                                                      │
-│  ┌───────────────────────────────────────────────────────────┐      │
-│  │                  MEMORY (SQLite)                           │      │
-│  │   History • Preferences • Reminders • Cache • Events      │      │
-│  └───────────────────────────────────────────────────────────┘      │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │                  MEMORY (SQLite)                               │  │
+│  │   History • Preferences • Reminders • Cache • Events          │  │
+│  └───────────────────────────────────────────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────┘
 ```
+
+---
 
 ## How It Works (No AI!)
 
 ### Command Parsing
-Instead of using LLMs to understand commands, SafeClaw uses:
 
-1. **Keyword matching** - Fast lookup of command keywords
-2. **Regex patterns** - Structured extraction of parameters
-3. **Fuzzy matching** - Typo tolerance with rapidfuzz
-4. **Date parsing** - Natural language dates with dateparser
+Instead of burning tokens on LLMs, SafeClaw uses:
 
-```python
+1. **Keyword matching** — Fast lookup of command keywords
+2. **Regex patterns** — Structured extraction of parameters
+3. **Fuzzy matching** — Typo tolerance with rapidfuzz
+4. **Date parsing** — Natural language dates with dateparser
+
+```
 # Example: "remind me to call mom tomorrow at 3pm"
 # → intent: "reminder"
 # → params: {task: "call mom", time: "tomorrow at 3pm"}
 # → entities: {datetime: 2024-01-16 15:00:00}
 ```
 
+### Voice Pipeline
+
+Fully local voice processing — no cloud APIs, no per-minute billing:
+
+* **Whisper STT** — OpenAI's Whisper model running locally for speech recognition
+* **Piper TTS** — Fast, high-quality text-to-speech with multiple voice options
+
 ### Summarization
+
 Uses [sumy](https://github.com/miso-belica/sumy)'s extractive algorithms:
 
-- **LexRank** - Graph-based, like PageRank for sentences
-- **TextRank** - Word co-occurrence graphs
-- **LSA** - Latent Semantic Analysis
-- **Luhn** - Statistical word frequency
+* **LexRank** — Graph-based, like PageRank for sentences
+* **TextRank** — Word co-occurrence graphs
+* **LSA** — Latent Semantic Analysis
+* **Luhn** — Statistical word frequency
 
-No neural networks, no API calls - pure math!
+No neural networks, no API calls — pure math.
+
+### Social Media Summarization
+
+Add Twitter, Mastodon, or Bluesky accounts and get extractive summaries of their recent posts. No API tokens needed for public content. Useful for tracking industry voices, news accounts, or competitors without doomscrolling.
 
 ### Web Crawling
+
 Async crawling with httpx + BeautifulSoup:
 
-- Single page link extraction
-- Multi-page crawling with depth limits
-- Domain filtering
-- Pattern matching
-- Built-in caching
+* Single page link extraction
+* Multi-page crawling with depth limits
+* Domain filtering and pattern matching
+* Built-in caching
 
-### RSS News Aggregation
-Fetch news from 50+ preset feeds or add your own:
+---
 
-```bash
-# Available categories
-safeclaw news --categories
+## Extending SafeClaw
 
-📂 Available News Categories
-
-✅ tech (6 feeds)
-   • Hacker News
-   • Ars Technica
-   • The Verge
-   • ... and 3 more
-
-⬜ world (5 feeds)
-   • BBC World
-   • Reuters World
-   • Al Jazeera
-   • ... and 2 more
-
-⬜ science (5 feeds)
-⬜ business (4 feeds)
-⬜ programming (5 feeds)
-⬜ security (4 feeds)
-⬜ linux (4 feeds)
-⬜ ai (4 feeds)
-```
-
-**Interactive commands:**
-```
-> news                    # Headlines from enabled categories
-> news tech               # Tech news only
-> news enable science     # Enable science category
-> news disable tech       # Disable tech category
-> add feed https://myblog.com/rss   # Add custom feed
-> news remove myblog.com  # Remove custom feed
-> read https://article.com/story    # Fetch and summarize article
-```
-
-**Summarization with news:**
-```bash
-# Get news with auto-summarization (uses sumy, no AI!)
-safeclaw news -s
-
-📰 News Headlines
-
-── TECH ──
-
-**Apple Announces New M4 Chip**
-Hacker News • Feb 02, 10:30
-The new M4 chip features improved neural engine performance
-and 40% better battery efficiency compared to M3.
-https://...
-```
-
-## Webhooks
-
-SafeClaw can both receive and send webhooks:
-
-### Inbound Webhooks
-
-```bash
-# Start webhook server
-safeclaw webhook --port 8765
-
-# Webhooks are available at:
-# POST http://localhost:8765/webhook/{name}
-```
-
-### Configuring Webhooks
+### Custom Actions
 
 ```python
-from safeclaw.triggers.webhook import WebhookServer
+from safeclaw.actions.base import BaseAction
 
-server = WebhookServer(port=8765)
-server.register(
-    name="github",
-    action="shell",
-    secret="your-webhook-secret",
-)
+class MyAction(BaseAction):
+    name = "myaction"
+
+    async def execute(self, params, user_id, channel, engine):
+        # Your logic here
+        return "Action completed!"
+
+# Register it
+engine.register_action("myaction", MyAction().execute)
 ```
 
-### Outbound Webhooks
+### Custom Intent Patterns
 
-```python
-from safeclaw.triggers.webhook import WebhookClient
+Add to `config/intents.yaml`:
 
-client = WebhookClient()
-await client.send_to_slack(
-    webhook_url="https://hooks.slack.com/...",
-    text="Deployment complete!",
-)
+```yaml
+intents:
+  deploy:
+    keywords: ["deploy", "release", "ship"]
+    patterns:
+      - "deploy to (production|staging)"
+    examples:
+      - "deploy to production"
+    action: "webhook"
 ```
 
-## Plugins
+### Plugin System
 
-SafeClaw has a plugin system for extending functionality. Plugins are automatically loaded from:
+Plugins are automatically loaded from the plugins directory:
 
 ```
 src/safeclaw/plugins/
-├── official/      # Curated, tested plugins
+├── official/          # Curated, tested plugins
 │   └── smarthome.py
-├── community/     # User-contributed plugins
+├── community/         # User-contributed plugins
 │   └── your_plugin.py
-├── base.py        # BasePlugin class
-└── loader.py      # Plugin loader
+├── base.py            # BasePlugin class
+└── loader.py          # Plugin loader
 ```
 
-### Official Plugins
+---
 
-| Plugin | Description | Install |
-|--------|-------------|---------|
-| `smarthome` | Philips Hue & MQTT/Home Assistant | `pip install safeclaw[smarthome]` |
-
-### Creating a Plugin
-
-Create a new `.py` file in `plugins/community/`:
-
-```python
-# plugins/community/hello.py
-from safeclaw.plugins.base import BasePlugin, PluginInfo
-
-class HelloPlugin(BasePlugin):
-    info = PluginInfo(
-        name="hello",
-        version="1.0.0",
-        description="A friendly greeting plugin",
-        author="Your Name",
-        keywords=["hello", "hi", "greet", "hey"],
-        patterns=[r"^hello$", r"^hi\s*(.*)$", r"^hey\s*(.*)$"],
-        examples=["hello", "hi there", "hey safeclaw"],
-    )
-
-    async def execute(self, params, user_id, channel, engine):
-        return "Hello! How can I help you today?"
-```
-
-That's it! The plugin is automatically:
-- Loaded on startup
-- Registered as an action
-- Added to the parser with your keywords/patterns
-
-### Plugin API
-
-```python
-class BasePlugin(ABC):
-    info: PluginInfo  # Required metadata
-
-    async def execute(self, params, user_id, channel, engine) -> str:
-        """Main plugin logic. Return response string."""
-        pass
-
-    def on_load(self, engine) -> None:
-        """Called when plugin loads. Use for initialization."""
-        pass
-
-    def on_unload(self) -> None:
-        """Called when plugin unloads. Use for cleanup."""
-        pass
-```
-
-### PluginInfo Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | str | Unique plugin name (becomes the action name) |
-| `version` | str | Semantic version |
-| `description` | str | What the plugin does |
-| `author` | str | Plugin author |
-| `keywords` | list | Words that trigger this plugin |
-| `patterns` | list | Regex patterns for matching |
-| `examples` | list | Example commands for help text |
-
-### Accessing Engine Features
-
-Plugins have full access to the SafeClaw engine:
-
-```python
-async def execute(self, params, user_id, channel, engine):
-    # Access config
-    my_config = engine.config.get("plugins", {}).get("myplugin", {})
-
-    # Access memory (SQLite)
-    await engine.memory.set("key", "value")
-    value = await engine.memory.get("key")
-
-    # Access other actions
-    # result = await engine.actions["weather"](params={}, user_id=user_id, ...)
-
-    return "Done!"
-```
-
-### Contributing Plugins
-
-1. Create your plugin in `plugins/community/`
-2. Test it thoroughly
-3. Submit a PR to move it to `plugins/official/`
-
-We review plugins for:
-- Security (no malicious code)
-- Quality (error handling, logging)
-- Usefulness (solves a real need)
-
-## Comparison with Clawdbot/OpenClaw
-
-| Feature | SafeClaw | Clawdbot |
-|---------|----------|----------|
-| Self-hosted | ✅ | ✅ |
-| No AI required | ✅ | ❌ |
-| Offline capable | ✅ | ❌ |
-| Privacy-first | ✅ | ✅ |
-| Multi-channel | ✅ | ✅ |
-| Web crawling | ✅ | ✅ |
-| Summarization | ✅ (extractive) | ✅ (AI) |
-| RSS/News feeds | ✅ | ✅ |
-| Sentiment analysis | ✅ (VADER) | ✅ (AI) |
-| Email integration | ✅ | ✅ |
-| Calendar support | ✅ | ✅ |
-| Document reading | ✅ | ✅ |
-| Desktop notifications | ✅ | ✅ |
-| Free-form chat | ❌ | ✅ |
-| Creative writing | ❌ | ✅ |
+## Who Is SafeClaw For?
 
 **SafeClaw is for you if:**
-- You want automation without AI dependencies
-- Privacy is paramount
-- You prefer deterministic, predictable behavior
-- You don't need free-form conversation
-- You want to avoid API costs and rate limits
+* You want automation without API bills
+* You're tired of unpredictable OpenClaw costs
+* Privacy matters to you — your data stays local by default
+* You prefer deterministic, predictable behavior
+* You want voice control without paying for ElevenLabs
+* You need social media monitoring without the doomscroll
+* You want smart home and Bluetooth control in one tool
+* You don't need free-form AI conversation
+
+**Stick with OpenClaw if:**
+* You need autonomous multi-step reasoning
+* Free-form conversation is essential
+* You want the AI to write its own skills
+* Browser automation is a core need
+
+---
 
 ## Development
 
 ```bash
 # Clone the repo
-git clone https://github.com/safeclaw/safeclaw.git
+git clone https://github.com/princezuda/safeclaw.git
 cd safeclaw
 
 # Install dev dependencies
@@ -618,37 +481,42 @@ mypy src/safeclaw
 ruff check src/safeclaw
 ```
 
+---
+
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-Contributions welcome! Please read our contributing guidelines first.
+Contributions welcome! Areas we'd love help with:
 
-Areas we'd love help with:
-- More channel adapters (Discord, Slack, Matrix)
-- Smart home integrations (Home Assistant, Philips Hue)
-- Better intent patterns
-- Documentation improvements
-- Tests and CI/CD
+* More channel adapters (Discord, Slack, Matrix)
+* Smart home integrations (Home Assistant, Philips Hue)
+* Better intent patterns
+* Additional social media platforms
+* Documentation improvements
+* Tests and CI/CD
 
 ## Acknowledgments
 
-- [sumy](https://github.com/miso-belica/sumy) - Extractive summarization
-- [VADER](https://github.com/cjhutto/vaderSentiment) - Sentiment analysis
-- [feedparser](https://github.com/kurtmckee/feedparser) - RSS/Atom feed parsing
-- [dateparser](https://github.com/scrapinghub/dateparser) - Natural language date parsing
-- [rapidfuzz](https://github.com/maxbachmann/RapidFuzz) - Fast fuzzy matching
-- [httpx](https://github.com/encode/httpx) - Async HTTP client
-- [FastAPI](https://fastapi.tiangolo.com/) - Webhook server
-- [Rich](https://github.com/Textualize/rich) - Beautiful CLI output
-- [PyMuPDF](https://pymupdf.readthedocs.io/) - PDF parsing
-- [python-docx](https://python-docx.readthedocs.io/) - DOCX parsing
-- [icalendar](https://icalendar.readthedocs.io/) - ICS calendar parsing
-- [desktop-notifier](https://github.com/samschott/desktop-notifier) - Cross-platform notifications
+* [Whisper](https://github.com/openai/whisper) — Local speech-to-text
+* [Piper](https://github.com/rhasspy/piper) — Local text-to-speech
+* [sumy](https://github.com/miso-belica/sumy) — Extractive summarization
+* [VADER](https://github.com/cjhutto/vaderSentiment) — Sentiment analysis
+* [feedparser](https://github.com/kurtmckee/feedparser) — RSS/Atom feed parsing
+* [dateparser](https://github.com/scrapinghub/dateparser) — Natural language date parsing
+* [rapidfuzz](https://github.com/maxbachmann/RapidFuzz) — Fast fuzzy matching
+* [httpx](https://github.com/encode/httpx) — Async HTTP client
+* [FastAPI](https://fastapi.tiangolo.com/) — Webhook server
+* [Rich](https://github.com/Textualize/rich) — Beautiful CLI output
+* [PyMuPDF](https://pymupdf.readthedocs.io/) — PDF parsing
+* [python-docx](https://python-docx.readthedocs.io/) — DOCX parsing
+* [icalendar](https://icalendar.readthedocs.io/) — ICS calendar parsing
+* [desktop-notifier](https://github.com/samschott/desktop-notifier) — Cross-platform notifications
+* [spaCy](https://spacy.io/) — Named entity recognition
+* [YOLO](https://github.com/ultralytics/ultralytics) — Object detection
 
 ---
 
-**SafeClaw** - Because sometimes you just want things to work, predictably. 🐾
-
+**SafeClaw** — Because your assistant shouldn't cost more than your rent. 🐾
