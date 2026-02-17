@@ -19,6 +19,7 @@ from rich.logging import RichHandler
 
 from safeclaw import __version__
 from safeclaw.actions import weather as weather_action
+from safeclaw.actions.blog import BlogAction
 from safeclaw.actions.briefing import BriefingAction
 from safeclaw.actions.calendar import CalendarAction
 from safeclaw.actions.crawl import CrawlAction
@@ -69,6 +70,7 @@ def create_engine(config_path: Path | None = None) -> SafeClaw:
     news_action = NewsAction()
     email_action = EmailAction()
     calendar_action = CalendarAction()
+    blog_action = BlogAction()
 
     engine.register_action("files", files_action.execute)
     engine.register_action("shell", shell_action.execute)
@@ -80,6 +82,7 @@ def create_engine(config_path: Path | None = None) -> SafeClaw:
     engine.register_action("email", email_action.execute)
     engine.register_action("calendar", calendar_action.execute)
     engine.register_action("weather", weather_action.execute)
+    engine.register_action("blog", blog_action.execute)
     engine.register_action("help", lambda **_: engine.get_help())
 
     # Load plugins from plugins/official/ and plugins/community/
@@ -540,6 +543,49 @@ async def _calendar(action: str, path: Path | None, days: int) -> None:
         console.print("  safeclaw calendar import --file calendar.ics")
         console.print("  safeclaw calendar today")
         console.print("  safeclaw calendar upcoming --days 14")
+
+
+@app.command()
+def blog(
+    action: str = typer.Argument("help", help="Action: write, show, title, publish, help"),
+    content: list[str] | None = typer.Argument(None, help="Blog content or title"),
+    verbose: bool = typer.Option(False, "--verbose"),
+):
+    """Blog without a language model. 50-star milestone feature."""
+    setup_logging(verbose)
+    asyncio.run(_blog(action, content))
+
+
+async def _blog(action: str, content: list[str] | None) -> None:
+    """Run blog command."""
+    blog_action = BlogAction()
+    user_id = "cli_user"
+
+    # Build raw_input from action + content
+    content_str = " ".join(content) if content else ""
+
+    if action == "help":
+        raw = "blog help"
+    elif action in ("write", "news", "add", "post"):
+        raw = f"write blog news {content_str}"
+    elif action in ("show", "list", "view"):
+        raw = "show blog"
+    elif action == "title":
+        raw = "blog title"
+    elif action in ("publish", "save", "export"):
+        raw = f"publish blog {content_str}"
+    else:
+        # Treat action as part of content
+        raw = f"write blog news {action} {content_str}"
+
+    # Execute without engine (standalone mode)
+    result = await blog_action.execute(
+        params={"raw_input": raw},
+        user_id=user_id,
+        channel="cli",
+        engine=None,  # type: ignore[arg-type]
+    )
+    console.print(result)
 
 
 @app.command()

@@ -135,6 +135,23 @@ PHRASE_VARIATIONS = {
         "make it darker",
         "adjust lights",
     ],
+    "blog": [
+        "write blog",
+        "blog news",
+        "blog post",
+        "add blog entry",
+        "publish blog",
+        "show blog",
+        "blog title",
+        "blog help",
+        "my blog",
+        "create blog",
+        "for title content",
+        "for body content",
+        "for non-title content",
+        "for heading content",
+        "for text content",
+    ],
 }
 
 
@@ -494,6 +511,34 @@ class CommandParser:
                     "what organizations are in this text",
                 ],
                 slots=["target"],
+            ),
+            IntentPattern(
+                intent="blog",
+                keywords=["blog", "blog news", "blog post", "blog entry", "publish blog"],
+                patterns=[
+                    r"^blog$",
+                    r"blog\s+help",
+                    r"(?:write|add|post|create)\s+(?:blog\s+)?(?:news|entry|post|content)\s*(.*)",
+                    r"blog\s+(?:news|write|add|post)\s*(.*)",
+                    r"(?:show|list|view|read)\s+(?:my\s+)?blog",
+                    r"blog\s+(?:entries|posts|list|show)",
+                    r"(?:generate|create|make|suggest)\s+(?:blog\s+)?(?:title|headline)",
+                    r"blog\s+title",
+                    r"(?:publish|finalize|save|export)\s+(?:my\s+)?blog\s*(.*)",
+                    r"(?:crawl|scrape|fetch|grab)\s+(.+?)\s+for\s+(title|body|non.?title|heading|text|content)\s*(?:content)?",
+                ],
+                examples=[
+                    "write blog news The latest update adds crawling support.",
+                    "blog news tech We added 50 new RSS feeds.",
+                    "crawl https://example.com for title content",
+                    "crawl https://example.com for body content",
+                    "crawl https://example.com for non-title content",
+                    "blog title",
+                    "publish blog",
+                    "show blog",
+                    "blog help",
+                ],
+                slots=["content", "url", "extract_type"],
             ),
         ]
 

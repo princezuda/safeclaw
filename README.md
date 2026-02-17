@@ -2,6 +2,8 @@
 
 **The zero-cost alternative to OpenClaw. No LLM. No API bills. No prompt injection. Runs on any machine.**
 
+> **50 STARS** — We hit fifty stars on GitHub! Every huge milestone we add something new. This time: **Blog without a language model.** Write blog news, crawl sites for content, and SafeClaw generates your titles using extractive summarization. No AI. Just math. [See below.](#-blog-without-a-language-model-50-star-milestone) Next milestone: **100 stars.**
+
 While OpenClaw users are burning [$200/day](https://www.notebookcheck.net/Free-to-use-AI-tool-can-burn-through-hundreds-of-Dollars-per-day-OpenClaw-has-absurdly-high-token-use.1219925.0.html) and [$3,600/month](https://dev.to/thegdsks/i-tried-the-free-ai-agent-with-124k-github-stars-heres-my-500-reality-check-2885) on API tokens, SafeClaw delivers 90% of the functionality using traditional programming — rule-based parsing, ML pipelines, and local-first tools. **Your API bill: $0. Forever.**
 
 SafeClaw uses VADER, spaCy, sumy, YOLO, Whisper, Piper, and other battle-tested ML techniques instead of generative AI. The result: deterministic, predictable, private, and completely free to run.
@@ -103,6 +105,13 @@ SafeClaw uses VADER, spaCy, sumy, YOLO, Whisper, Piper, and other battle-tested 
 ### 🥚 Easter Eggs
 * Built-in personality and hidden surprises — because tools should be fun
 
+### 📝 Blog without a Language Model (50-star milestone)
+* **Write blog news** — Add entries with natural language: "write blog news We shipped faster crawling today."
+* **Crawl sites for content** — "crawl https://example.com for title content", "crawl example.com for body content", "crawl example.com for non-title content"
+* **Auto-generated titles** — The most summarized, most repeated content becomes your headline. No LLM, just extractive summarization.
+* **Plain .txt output** — Your blog is a simple text file you can share anywhere
+* **Natural language interface** — Just describe what you want: crawl a site for titles, write news, generate a title, publish
+
 ---
 
 ## Full Comparison: SafeClaw vs OpenClaw
@@ -137,6 +146,7 @@ SafeClaw uses VADER, spaCy, sumy, YOLO, Whisper, Piper, and other battle-tested 
 | Plugin system | ✅ | ✅ (5,700+ skills) |
 | Free-form chat | ❌ | ✅ |
 | Creative writing | ❌ | ✅ |
+| Blog (no LLM) | ✅ (extractive titles) | ❌ (requires AI) |
 | Command chaining | ✅ ("read email and remind me at 3pm") | ✅ |
 | Autonomous multi-step tasks | ❌ | ✅ |
 | Self-writing skills | ❌ | ✅ |
@@ -227,6 +237,10 @@ safeclaw --verbose
 > calendar today                    # Today's events from .ics
 > analyze sentiment of this text    # VADER sentiment analysis
 > read document.pdf                 # Extract text from documents
+> write blog news We shipped a new feature today.  # Blog entry
+> crawl https://example.com for title content      # Crawl for blog
+> blog title                        # Generate title from entries
+> publish blog                      # Save blog as .txt
 > help
 ```
 
@@ -260,6 +274,14 @@ safeclaw document notes.md --output extracted.txt
 safeclaw calendar import --file calendar.ics
 safeclaw calendar today
 safeclaw calendar upcoming --days 14
+
+# Blog (50-star milestone)
+safeclaw blog help                 # Blog feature guide
+safeclaw blog write "New crawling features shipped today."
+safeclaw blog show                 # View draft and published posts
+safeclaw blog title                # Generate title from entries
+safeclaw blog publish              # Save blog as .txt
+safeclaw blog publish "My Custom Title"  # Publish with custom title
 
 # Webhooks
 safeclaw webhook --port 8765

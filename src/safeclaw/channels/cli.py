@@ -37,6 +37,26 @@ class CLIChannel(BaseChannel):
         """Start the CLI interface."""
         self.running = True
 
+        # 50-star milestone celebration banner
+        self.console.print()
+        self.console.print(
+            Panel.fit(
+                "[bold yellow]          50 STARS          [/bold yellow]\n"
+                "[bold white]We hit fifty stars on GitHub![/bold white]\n"
+                "\n"
+                "[dim]Every huge milestone, we add something new.[/dim]\n"
+                "[bold cyan]NEW:[/bold cyan] [white]Blog without a language model[/white]\n"
+                "[dim]Write blog news, crawl sites for content,[/dim]\n"
+                "[dim]and let SafeClaw generate your titles.[/dim]\n"
+                "[dim]Type[/dim] [bold]blog help[/bold] [dim]to get started.[/dim]\n"
+                "\n"
+                "[dim]Next milestone:[/dim] [bold]100 stars[/bold]",
+                border_style="yellow",
+                title="[bold yellow] MILESTONE [/bold yellow]",
+                subtitle="[dim]safeclaw 0.2.1[/dim]",
+            )
+        )
+        self.console.print()
         self.console.print(
             Panel.fit(
                 "[bold green]SafeClaw[/bold green] - Privacy-first automation assistant\n"
