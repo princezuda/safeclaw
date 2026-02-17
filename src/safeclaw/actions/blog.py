@@ -197,8 +197,8 @@ class BlogAction(BaseAction):
             return f"No content found on {url}"
 
         # Extract the requested content type
-        from bs4 import BeautifulSoup
         import httpx
+        from bs4 import BeautifulSoup
 
         async with httpx.AsyncClient(
             timeout=30.0,
