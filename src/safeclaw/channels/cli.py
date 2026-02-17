@@ -48,7 +48,9 @@ class CLIChannel(BaseChannel):
                 "[bold cyan]NEW:[/bold cyan] [white]Blog without a language model[/white]\n"
                 "[dim]Write blog news, crawl sites for content,[/dim]\n"
                 "[dim]and let SafeClaw generate your titles.[/dim]\n"
-                "[dim]Type[/dim] [bold]blog help[/bold] [dim]to get started.[/dim]",
+                "[dim]Type[/dim] [bold]blog help[/bold] [dim]to get started.[/dim]\n"
+                "\n"
+                "[dim]Next milestone:[/dim] [bold]100 stars[/bold]",
                 border_style="yellow",
                 title="[bold yellow] MILESTONE [/bold yellow]",
                 subtitle="[dim]safeclaw 0.2.0[/dim]",

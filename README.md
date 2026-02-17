@@ -2,7 +2,7 @@
 
 **The zero-cost alternative to OpenClaw. No LLM. No API bills. No prompt injection. Runs on any machine.**
 
-> **50 STARS** — We hit fifty stars on GitHub! Every huge milestone we add something new. This time: **Blog without a language model.** Write blog news, crawl sites for content, and SafeClaw generates your titles using extractive summarization. No AI. Just math. [See below.](#-blog-without-a-language-model-50-star-milestone)
+> **50 STARS** — We hit fifty stars on GitHub! Every huge milestone we add something new. This time: **Blog without a language model.** Write blog news, crawl sites for content, and SafeClaw generates your titles using extractive summarization. No AI. Just math. [See below.](#-blog-without-a-language-model-50-star-milestone) Next milestone: **100 stars.**
 
 While OpenClaw users are burning [$200/day](https://www.notebookcheck.net/Free-to-use-AI-tool-can-burn-through-hundreds-of-Dollars-per-day-OpenClaw-has-absurdly-high-token-use.1219925.0.html) and [$3,600/month](https://dev.to/thegdsks/i-tried-the-free-ai-agent-with-124k-github-stars-heres-my-500-reality-check-2885) on API tokens, SafeClaw delivers 90% of the functionality using traditional programming — rule-based parsing, ML pipelines, and local-first tools. **Your API bill: $0. Forever.**
 
