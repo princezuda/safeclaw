@@ -8,7 +8,7 @@ requires-python = ">=3.11"
 authors = [
     {name = "SafeClaw Contributors"}
 ]
-keywords = ["automation", "assistant", "privacy", "self-hosted", "webhook", "crawler"]
+keywords = ["automation", "assistant", "privacy", "self-hosted", "webhook", "crawler", "blog", "ai", "wordpress", "joomla"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: End Users/Desktop",
@@ -83,8 +83,11 @@ nlp = ["spacy>=3.7.0", "langdetect>=1.0.9"]  # NER, ~50MB
 vision = ["ultralytics>=8.0.0", "pytesseract>=0.3.10"]  # YOLO+OCR, ~2GB (needs PyTorch)
 ocr = ["pytesseract>=0.3.10"]  # OCR only, lightweight
 
+# Blog publishing (optional)
+sftp = ["paramiko>=3.4.0"]  # Python-native SFTP (fallback; scp command also works)
+
 all = [
-    "safeclaw[telegram,discord,slack,matrix,email,smarthome,browser,caldav]"
+    "safeclaw[telegram,discord,slack,matrix,email,smarthome,browser,caldav,sftp]"
 ]
 ml = ["safeclaw[nlp,vision]"]  # All ML features
 dev = [
@@ -129,6 +132,10 @@ ignore = ["E501"]  # Line length handled by formatter
 "src/safeclaw/actions/calendar.py" = ["F401"]
 "src/safeclaw/cli.py" = ["F401"]
 "src/safeclaw/core/engine.py" = ["F401"]
+"src/safeclaw/core/ai_writer.py" = ["F401"]
+"src/safeclaw/core/blog_publisher.py" = ["F401"]
+"src/safeclaw/core/frontpage.py" = ["F401"]
+"src/safeclaw/actions/blog.py" = ["F401"]
 
 [tool.mypy]
 python_version = "3.11"
