@@ -151,6 +151,16 @@ PHRASE_VARIATIONS = {
         "for non-title content",
         "for heading content",
         "for text content",
+        "ai blog",
+        "blog ai",
+        "manual blog",
+        "edit blog",
+        "ai options",
+        "ai providers",
+        "ai headlines",
+        "ai rewrite",
+        "ai expand",
+        "ai blog seo",
     ],
 }
 
@@ -514,7 +524,8 @@ class CommandParser:
             ),
             IntentPattern(
                 intent="blog",
-                keywords=["blog", "blog news", "blog post", "blog entry", "publish blog"],
+                keywords=["blog", "blog news", "blog post", "blog entry", "publish blog",
+                          "ai blog", "edit blog", "manual blog"],
                 patterns=[
                     r"^blog$",
                     r"blog\s+help",
@@ -526,8 +537,22 @@ class CommandParser:
                     r"blog\s+title",
                     r"(?:publish|finalize|save|export)\s+(?:my\s+)?blog\s*(.*)",
                     r"(?:crawl|scrape|fetch|grab)\s+(.+?)\s+for\s+(title|body|non.?title|heading|text|content)\s*(?:content)?",
+                    # Interactive flow: bare number responses when in blog session
+                    r"^[12]$",
+                    # AI blog commands
+                    r"ai\s+blog",
+                    r"blog\s+ai",
+                    r"manual\s+blog",
+                    r"edit\s+blog",
+                    r"ai\s+(?:generate|write|create|draft|rewrite|expand|headlines?|seo|options?|providers?)",
+                    r"(?:switch|use|set)\s+(?:ai\s+)?provider",
+                    r"publish\s+(?:blog\s+)?to\s+",
+                    r"(?:set|make|change)\s+(?:the\s+)?(?:front\s*page|home\s*page)",
+                    r"(?:show|what|which)\s+(?:is\s+)?(?:the\s+)?(?:front\s*page|home\s*page)",
+                    r"(?:list|show)\s+(?:publish|upload)\s*targets?",
                 ],
                 examples=[
+                    "blog",
                     "write blog news The latest update adds crawling support.",
                     "blog news tech We added 50 new RSS feeds.",
                     "crawl https://example.com for title content",
@@ -537,6 +562,8 @@ class CommandParser:
                     "publish blog",
                     "show blog",
                     "blog help",
+                    "ai blog generate about technology",
+                    "publish blog to my-wordpress",
                 ],
                 slots=["content", "url", "extract_type"],
             ),

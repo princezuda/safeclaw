@@ -18,6 +18,7 @@ Features:
 - Multiple AI API keys and publishing targets
 """
 
+import json
 import logging
 import re
 from datetime import datetime
@@ -36,6 +37,12 @@ if TYPE_CHECKING:
     from safeclaw.core.engine import SafeClaw
 
 logger = logging.getLogger(__name__)
+
+
+# Session states for the interactive blog flow
+SESSION_AWAITING_CHOICE = "awaiting_choice"
+SESSION_AWAITING_TOPIC = "awaiting_topic"
+SESSION_REVIEWING = "reviewing"
 
 
 class BlogAction(BaseAction):
@@ -76,6 +83,8 @@ class BlogAction(BaseAction):
         self.publisher: BlogPublisher | None = None
         self.frontpage: FrontPageManager | None = None
         self._initialized = False
+        self._sessions_dir = self.blog_dir / ".sessions"
+        self._sessions_dir.mkdir(parents=True, exist_ok=True)
 
     def _ensure_initialized(self, engine: "SafeClaw") -> None:
         """Lazy-initialize AI writer, publisher, and front page manager from config."""
@@ -105,6 +114,36 @@ class BlogAction(BaseAction):
                 state_dir=Path.home() / ".safeclaw" / "frontpage",
             )
 
+    # ── Session state management ───────────────────────────────────────────
+
+    def _get_session_path(self, user_id: str) -> Path:
+        """Get the session state file path for a user."""
+        safe_id = re.sub(r'[^\w]', '_', user_id)
+        return self._sessions_dir / f"session-{safe_id}.json"
+
+    def _get_session(self, user_id: str) -> dict[str, Any]:
+        """Load session state for a user."""
+        path = self._get_session_path(user_id)
+        if path.exists():
+            try:
+                return json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                pass
+        return {}
+
+    def _set_session(self, user_id: str, state: str, **data: Any) -> None:
+        """Save session state for a user."""
+        path = self._get_session_path(user_id)
+        session = {"state": state, **data}
+        path.write_text(json.dumps(session))
+
+    def _clear_session(self, user_id: str) -> None:
+        """Clear session state for a user."""
+        path = self._get_session_path(user_id)
+        path.unlink(missing_ok=True)
+
+    # ── Main execute with interactive flow ───────────────────────────────────
+
     async def execute(
         self,
         params: dict[str, Any],
@@ -117,7 +156,27 @@ class BlogAction(BaseAction):
         raw_input = params.get("raw_input", "").strip()
         lower = raw_input.lower()
 
-        # Route based on natural language
+        # ── Check session state FIRST (for interactive flow) ─────────────
+        session = self._get_session(user_id)
+        session_state = session.get("state")
+
+        if session_state:
+            result = await self._handle_session(
+                session, raw_input, lower, user_id, engine,
+            )
+            if result is not None:
+                return result
+            # If _handle_session returns None, fall through to normal routing
+
+        # ── Bare "blog" → show interactive menu ──────────────────────────
+        if self._is_bare_blog(lower):
+            return self._show_blog_menu(user_id)
+
+        # ── Edit blog command ────────────────────────────────────────────
+        if self._is_edit_blog(lower):
+            return await self._edit_blog(raw_input, user_id)
+
+        # ── Route based on natural language ──────────────────────────────
         if self._is_help(lower):
             return self._help_text()
 
@@ -171,6 +230,313 @@ class BlogAction(BaseAction):
             return await self._write_blog_news(raw_input, user_id, engine)
 
         return self._help_text()
+
+    # ── Interactive flow ─────────────────────────────────────────────────────
+
+    def _is_bare_blog(self, text: str) -> bool:
+        """Check if user typed just 'blog' with no other arguments."""
+        return text.strip() in ("blog", "blog ai", "ai blog", "manual blog")
+
+    def _is_edit_blog(self, text: str) -> bool:
+        """Check if user wants to edit their blog draft."""
+        return bool(re.search(r"^edit\s+blog\s*", text))
+
+    def _show_blog_menu(self, user_id: str) -> str:
+        """Show the interactive blog menu when user types 'blog'."""
+        self._set_session(user_id, SESSION_AWAITING_CHOICE)
+
+        # Check for existing draft
+        draft_path = self._get_draft_path(user_id)
+        draft_info = ""
+        if draft_path.exists():
+            entry_count = self._count_entries(draft_path)
+            if entry_count > 0:
+                draft_info = f"\n  You have a draft in progress ({entry_count} entries).\n"
+
+        # Build AI provider info
+        ai_status = ""
+        if self.ai_writer and self.ai_writer.providers:
+            active = self.ai_writer.get_active_provider()
+            if active:
+                ai_status = f" [{active.provider.value}/{active.model}]"
+        else:
+            ai_status = " [setup needed - type 'ai options']"
+
+        return (
+            "**What would you like to do?**\n"
+            f"{draft_info}\n"
+            "  **1. AI Blog for You (Recommended)**\n"
+            f"     AI writes a full blog post for you. You can edit it after.{ai_status}\n"
+            "\n"
+            "  **2. Manual Blogging (No AI)**\n"
+            "     Write entries yourself, crawl sites for content.\n"
+            "     SafeClaw generates titles using extractive summarization.\n"
+            "\n"
+            "Type **1** or **2** to choose."
+        )
+
+    async def _handle_session(
+        self,
+        session: dict[str, Any],
+        raw_input: str,
+        lower: str,
+        user_id: str,
+        engine: "SafeClaw",
+    ) -> str | None:
+        """
+        Handle input based on active session state.
+
+        Returns a response string, or None to fall through to normal routing.
+        """
+        state = session.get("state", "")
+
+        # If user types a specific command, let normal routing handle it
+        # (only intercept bare numbers and free-text during active sessions)
+        if self._is_explicit_command(lower):
+            self._clear_session(user_id)
+            return None
+
+        if state == SESSION_AWAITING_CHOICE:
+            return await self._handle_choice(lower, user_id, engine)
+
+        elif state == SESSION_AWAITING_TOPIC:
+            return await self._handle_topic(raw_input, user_id, engine)
+
+        elif state == SESSION_REVIEWING:
+            return await self._handle_review(raw_input, lower, user_id, engine)
+
+        return None
+
+    def _is_explicit_command(self, text: str) -> bool:
+        """Check if input is an explicit command (not a session response)."""
+        # These are commands that should bypass the session and go through normal routing
+        explicit_patterns = [
+            r"blog\s+help", r"help\s+blog",
+            r"show\s+blog", r"list\s+blog",
+            r"publish\s+blog\s+to\s+",
+            r"set\s+front",
+            r"ai\s+(options|providers|switch)",
+            r"(switch|use|set)\s+ai\s+provider",
+            r"crawl\s+",
+            r"^quit$", r"^exit$",
+        ]
+        return any(re.search(p, text) for p in explicit_patterns)
+
+    async def _handle_choice(self, lower: str, user_id: str, engine: "SafeClaw") -> str | None:
+        """Handle response to the blog menu (awaiting_choice state)."""
+        choice = lower.strip()
+
+        if choice == "1":
+            # User chose AI blogging
+            if not self.ai_writer or not self.ai_writer.providers:
+                self._clear_session(user_id)
+                return (
+                    "AI blogging requires an AI provider.\n\n"
+                    + AIWriter.get_local_ai_info()
+                    + "\n\nAfter setting up a provider in config/config.yaml, type **blog** to try again."
+                )
+
+            active = self.ai_writer.get_active_provider()
+            provider_info = f" using {active.provider.value}/{active.model}" if active else ""
+
+            self._set_session(user_id, SESSION_AWAITING_TOPIC)
+
+            return (
+                f"**AI Blog{provider_info}**\n"
+                "\n"
+                "What should the blog post be about?\n"
+                "\n"
+                "Type your topic. Examples:\n"
+                "  sustainable technology trends in 2026\n"
+                "  why privacy-first tools are the future\n"
+                "  a beginner's guide to home automation\n"
+                "\n"
+                "Type your topic now:"
+            )
+
+        elif choice == "2":
+            # User chose manual blogging
+            self._clear_session(user_id)
+
+            draft_path = self._get_draft_path(user_id)
+            draft_info = ""
+            if draft_path.exists():
+                entry_count = self._count_entries(draft_path)
+                if entry_count > 0:
+                    draft_info = f"\nYou have a draft with {entry_count} entries. Continue adding to it.\n"
+
+            return (
+                "**Manual Blogging (No AI)**\n"
+                f"{draft_info}\n"
+                "Write blog entries and crawl websites for content.\n"
+                "SafeClaw generates titles using extractive summarization.\n"
+                "\n"
+                "**Get started:**\n"
+                "  write blog news <your content here>\n"
+                "  crawl https://example.com for title content\n"
+                "  crawl https://example.com for body content\n"
+                "\n"
+                "**When ready:**\n"
+                "  blog title      - Generate a title from your entries\n"
+                "  publish blog    - Save as .txt\n"
+                "  show blog       - View your draft and published posts"
+            )
+
+        # Not a valid choice - remind them
+        return (
+            "Please type **1** for AI blogging or **2** for manual blogging.\n"
+            "\n"
+            "  **1** - AI Blog for You (Recommended)\n"
+            "  **2** - Manual Blogging (No AI)"
+        )
+
+    async def _handle_topic(
+        self, raw_input: str, user_id: str, engine: "SafeClaw"
+    ) -> str | None:
+        """Handle topic input for AI blog generation (awaiting_topic state)."""
+        topic = raw_input.strip()
+
+        if not topic:
+            return "Please type a topic for your blog post:"
+
+        if topic.lower() in ("cancel", "back", "nevermind", "0"):
+            self._clear_session(user_id)
+            return "Cancelled. Type **blog** to start over."
+
+        # Generate the blog post
+        draft_path = self._get_draft_path(user_id)
+        context = ""
+        if draft_path.exists():
+            context = self._get_entries_text(draft_path.read_text())
+
+        response = await self.ai_writer.generate_blog(topic, context)
+
+        if response.error:
+            self._clear_session(user_id)
+            return f"AI generation failed: {response.error}\n\nType **blog** to try again."
+
+        # Save generated content to draft
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        entry = f"\n[{timestamp}] AI-generated ({response.provider}/{response.model})\n{response.content}\n"
+
+        with open(draft_path, "a") as f:
+            f.write(entry)
+
+        # Switch to reviewing state
+        self._set_session(user_id, SESSION_REVIEWING)
+
+        tokens_info = f" ({response.tokens_used} tokens)" if response.tokens_used else ""
+
+        # Show the full content for review
+        content_preview = response.content
+        if len(content_preview) > 1500:
+            content_preview = content_preview[:1500] + "\n\n... [truncated - full content saved to draft]"
+
+        return (
+            f"**AI-Generated Blog Post**\n"
+            f"Provider: {response.provider}/{response.model}{tokens_info}\n"
+            "\n"
+            "---\n"
+            f"\n{content_preview}\n\n"
+            "---\n"
+            "\n"
+            "**What would you like to do?**\n"
+            "\n"
+            "  **edit blog** <your changes>  - Replace with your edits\n"
+            "  **ai rewrite blog**           - Have AI polish/rewrite it\n"
+            "  **ai expand blog**            - Have AI make it longer\n"
+            "  **publish blog**              - Save as .txt locally\n"
+            "  **publish blog to <target>**  - Publish to WordPress/Joomla/SFTP\n"
+            "  **ai headlines**              - Generate headline options\n"
+            "  **blog**                      - Start over\n"
+            "\n"
+            "Or just type more text to add to the draft."
+        )
+
+    async def _handle_review(
+        self,
+        raw_input: str,
+        lower: str,
+        user_id: str,
+        engine: "SafeClaw",
+    ) -> str | None:
+        """Handle input during the review state (after AI generates content)."""
+        # If user types just text (not a command), treat as adding to draft
+        if not self._looks_like_command(lower):
+            # Append the user's text to the draft
+            draft_path = self._get_draft_path(user_id)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+            entry = f"\n[{timestamp}] user edit\n{raw_input}\n"
+
+            with open(draft_path, "a") as f:
+                f.write(entry)
+
+            entry_count = self._count_entries(draft_path)
+
+            return (
+                f"Added to draft ({entry_count} entries).\n\n"
+                "Continue editing, or:\n"
+                "  **publish blog**              - Save as .txt\n"
+                "  **publish blog to <target>**  - Publish remotely\n"
+                "  **ai rewrite blog**           - AI polish\n"
+                "  **show blog**                 - See full draft"
+            )
+
+        # It's a command - clear session and fall through to normal routing
+        self._clear_session(user_id)
+        return None
+
+    def _looks_like_command(self, text: str) -> bool:
+        """Check if text looks like a SafeClaw command rather than content."""
+        command_starts = [
+            "blog", "publish", "show", "list", "view", "read",
+            "ai ", "edit ", "crawl", "write", "add ", "post ",
+            "create ", "generate", "suggest", "set ", "make ",
+            "switch", "use ", "cancel", "back", "help",
+        ]
+        return any(text.startswith(prefix) for prefix in command_starts)
+
+    async def _edit_blog(self, raw_input: str, user_id: str) -> str:
+        """Edit/replace the blog draft content."""
+        # Extract the new content
+        new_content = re.sub(r'(?i)^edit\s+blog\s*', '', raw_input).strip()
+
+        draft_path = self._get_draft_path(user_id)
+
+        if not new_content:
+            # Show current draft for reference
+            if draft_path.exists():
+                content = self._get_entries_text(draft_path.read_text())
+                preview = content[:1000]
+                if len(content) > 1000:
+                    preview += "\n\n... [truncated]"
+                return (
+                    "**Current draft:**\n"
+                    f"\n{preview}\n\n"
+                    "To replace the draft, type:\n"
+                    "  edit blog <your new content here>\n\n"
+                    "Or type text to add to the draft."
+                )
+            return "No draft found. Type **blog** to start."
+
+        # Replace the entire draft with new content
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+        new_draft = f"[{timestamp}] user edit\n{new_content}\n"
+        draft_path.write_text(new_draft)
+
+        preview = new_content[:500]
+        if len(new_content) > 500:
+            preview += "..."
+
+        return (
+            "**Draft updated.**\n\n"
+            f"{preview}\n\n"
+            "Next:\n"
+            "  **ai rewrite blog**           - AI polish\n"
+            "  **publish blog**              - Save as .txt\n"
+            "  **publish blog to <target>**  - Publish remotely\n"
+            "  **blog title**                - Generate a title"
+        )
 
     # ── Natural language detection ───────────────────────────────────────────
 

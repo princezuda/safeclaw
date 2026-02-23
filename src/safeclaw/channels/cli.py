@@ -37,7 +37,7 @@ class CLIChannel(BaseChannel):
         """Start the CLI interface."""
         self.running = True
 
-        # 50-star milestone celebration banner
+        # Milestone celebration banner
         self.console.print()
         self.console.print(
             Panel.fit(
@@ -45,10 +45,10 @@ class CLIChannel(BaseChannel):
                 "[bold white]We hit fifty stars on GitHub![/bold white]\n"
                 "\n"
                 "[dim]Every huge milestone, we add something new.[/dim]\n"
-                "[bold cyan]NEW:[/bold cyan] [white]Blog without a language model[/white]\n"
-                "[dim]Write blog news, crawl sites for content,[/dim]\n"
-                "[dim]and let SafeClaw generate your titles.[/dim]\n"
-                "[dim]Type[/dim] [bold]blog help[/bold] [dim]to get started.[/dim]\n"
+                "[bold cyan]NEW:[/bold cyan] [white]AI-Powered Blogging[/white]\n"
+                "[dim]Type[/dim] [bold]blog[/bold] [dim]to get started.[/dim]\n"
+                "[dim]AI writes for you, or go manual. Publish to[/dim]\n"
+                "[dim]WordPress, Joomla, SFTP, or any API.[/dim]\n"
                 "\n"
                 "[dim]Next milestone:[/dim] [bold]100 stars[/bold]",
                 border_style="yellow",
@@ -60,7 +60,8 @@ class CLIChannel(BaseChannel):
         self.console.print(
             Panel.fit(
                 "[bold green]SafeClaw[/bold green] - Privacy-first automation assistant\n"
-                "Type [bold]help[/bold] for commands, [bold]quit[/bold] to exit",
+                "Type [bold]blog[/bold] to start blogging, "
+                "[bold]help[/bold] for commands, [bold]quit[/bold] to exit",
                 border_style="green",
             )
         )
