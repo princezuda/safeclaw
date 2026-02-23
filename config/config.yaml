@@ -41,3 +41,157 @@ memory:
 apis:
   openweathermap: ""  # For weather in briefings
   newsapi: ""  # For news in briefings
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AI Providers - Multiple providers can be configured simultaneously.
+# The first enabled provider becomes the active/default one.
+# Switch at runtime with: switch ai provider <label>
+#
+# Local AI (free, private, no API key needed):
+#   - Ollama:    https://ollama.com/download
+#   - LM Studio: https://lmstudio.ai
+#   - llama.cpp: https://github.com/ggerganov/llama.cpp
+#   - LocalAI:   https://localai.io
+#   - Jan:       https://jan.ai
+#
+# Cloud AI (API key required):
+#   - OpenAI:    https://platform.openai.com/api-keys
+#   - Anthropic: https://console.anthropic.com/settings/keys
+#   - Google:    https://aistudio.google.com/apikey
+#   - Mistral:   https://console.mistral.ai/api-keys
+#   - Groq:      https://console.groq.com/keys
+# ─────────────────────────────────────────────────────────────────────────────
+ai_providers:
+  # --- Local AI (uncomment to enable) ---
+
+  # - label: "local-ollama"
+  #   provider: "ollama"
+  #   model: "llama3.1"           # Also: mistral, gemma2, phi3, qwen2.5
+  #   endpoint: "http://localhost:11434/api/chat"
+  #   temperature: 0.7
+  #   max_tokens: 2000
+
+  # - label: "local-lmstudio"
+  #   provider: "lm_studio"
+  #   model: "local-model"
+  #   endpoint: "http://localhost:1234/v1/chat/completions"
+
+  # - label: "local-llamacpp"
+  #   provider: "llamacpp"
+  #   model: "local-model"
+  #   endpoint: "http://localhost:8080/v1/chat/completions"
+
+  # - label: "local-jan"
+  #   provider: "jan"
+  #   model: "llama3.1-8b"
+  #   endpoint: "http://localhost:1337/v1/chat/completions"
+
+  # --- Cloud AI (uncomment and add your API key) ---
+
+  # - label: "openai"
+  #   provider: "openai"
+  #   api_key: "sk-..."           # Get from https://platform.openai.com/api-keys
+  #   model: "gpt-4o"             # Also: gpt-4-turbo, gpt-3.5-turbo
+  #   temperature: 0.7
+  #   max_tokens: 2000
+
+  # - label: "anthropic"
+  #   provider: "anthropic"
+  #   api_key: "sk-ant-..."       # Get from https://console.anthropic.com/settings/keys
+  #   model: "claude-sonnet-4-20250514"  # Also: claude-opus-4-20250514, claude-haiku-4-20250514
+  #   temperature: 0.7
+  #   max_tokens: 2000
+
+  # - label: "google"
+  #   provider: "google"
+  #   api_key: "AI..."            # Get from https://aistudio.google.com/apikey
+  #   model: "gemini-1.5-flash"   # Also: gemini-1.5-pro, gemini-2.0-flash
+  #   temperature: 0.7
+  #   max_tokens: 2000
+
+  # - label: "mistral"
+  #   provider: "mistral"
+  #   api_key: "..."              # Get from https://console.mistral.ai/api-keys
+  #   model: "mistral-large-latest"
+  #   temperature: 0.7
+  #   max_tokens: 2000
+
+  # - label: "groq"
+  #   provider: "groq"
+  #   api_key: "gsk_..."          # Get from https://console.groq.com/keys
+  #   model: "llama-3.1-70b-versatile"  # Fast inference!
+  #   temperature: 0.7
+  #   max_tokens: 2000
+
+  # - label: "custom-api"
+  #   provider: "custom"
+  #   api_key: "..."
+  #   model: "my-model"
+  #   endpoint: "https://my-server.com/v1/chat/completions"  # OpenAI-compatible
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Publishing Targets - Where to publish blog posts.
+# Multiple targets can be active. Publish to all with: publish blog to all
+#
+# Supported types: wordpress, joomla, sftp, api
+# ─────────────────────────────────────────────────────────────────────────────
+publish_targets:
+  # --- WordPress (REST API v2) ---
+  # Auth options:
+  #   1. Application Password (recommended): username + app password
+  #      Generate at: WP Admin > Users > Profile > Application Passwords
+  #   2. JWT token: Set api_key to your JWT token
+  #   3. Basic Auth (not recommended for production)
+
+  # - label: "my-wordpress"
+  #   type: "wordpress"
+  #   url: "https://mysite.com"        # Your WordPress site URL
+  #   username: "admin"                 # WordPress username
+  #   password: "xxxx xxxx xxxx xxxx"   # Application Password (with spaces)
+  #   # api_key: ""                     # Or use JWT token instead
+  #   wp_status: "publish"              # publish, draft, pending, private
+  #   wp_category_ids: []               # Category IDs to assign
+  #   wp_tag_ids: []                    # Tag IDs to assign
+  #   wp_author_id: 0                   # Author ID (0 = default)
+
+  # --- Joomla (Web Services API, Joomla 4+) ---
+  # Auth options:
+  #   1. API Token (recommended): Generate in Joomla Admin > Users > API Token
+  #   2. Basic Auth: username + password
+
+  # - label: "my-joomla"
+  #   type: "joomla"
+  #   url: "https://myjoomla.com"      # Your Joomla site URL
+  #   api_key: ""                       # Joomla API token
+  #   # username: ""                    # Or use basic auth
+  #   # password: ""
+  #   joomla_category_id: 2             # Category ID (2 = Uncategorised)
+  #   joomla_access: 1                  # Access level (1 = Public)
+  #   joomla_featured: false            # Auto-feature new articles
+
+  # --- SFTP Upload ---
+  # Uploads blog posts as HTML files to any server via SCP/SFTP.
+  # Auth: SSH key (recommended) or password.
+
+  # - label: "my-server"
+  #   type: "sftp"
+  #   sftp_host: "myserver.com"
+  #   sftp_port: 22
+  #   sftp_user: "deploy"
+  #   sftp_password: ""                 # Or use SSH key below
+  #   sftp_key_path: "~/.ssh/id_rsa"   # SSH private key path
+  #   sftp_remote_path: "/var/www/html/blog"
+
+  # --- Generic API ---
+  # POST/PUT JSON to any endpoint. Use body_template for custom formats.
+
+  # - label: "my-api"
+  #   type: "api"
+  #   url: "https://api.mysite.com/posts"
+  #   api_key: ""                       # Bearer token
+  #   api_method: "POST"                # POST or PUT
+  #   api_headers:                      # Extra headers
+  #     X-Custom-Header: "value"
+  #   api_body_template: ""             # Custom JSON template (optional)
+  #   # Template placeholders: {title}, {content}, {excerpt}, {slug}, {tags}, {date}
+  #   # Example: '{{"post_title": "{title}", "post_body": "{content}"}}'
