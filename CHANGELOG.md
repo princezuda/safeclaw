@@ -6,6 +6,18 @@ Every huge milestone, we add something new. Next milestone: **100 stars.**
 
 ---
 
+## [0.2.2] - 2026-02-24
+
+### Added
+- **Blogging Guide in README** — full setup and usage documentation for both deterministic and AI blogging
+  - Step-by-step AI provider setup (local and cloud)
+  - Publishing target configuration (WordPress, Joomla, SFTP, API)
+  - Command reference tables for all blog operations
+  - Deterministic vs AI comparison table
+- Updated architecture diagram with AI Writer, Blog Publisher, and provider details
+- Updated comparison table with AI blog and publishing rows
+- Added setup pointers in `config/config.yaml` comments
+
 ## [0.2.1] - 2026-02-17
 
 ### Added

@@ -1,10 +1,11 @@
 """
 SafeClaw - A privacy-first personal automation assistant.
 
-No GenAI required. 100% self-hosted. Your data stays yours.
+No GenAI required for core features. Optional AI blogging with 11 providers.
+100% self-hosted. Your data stays yours.
 """
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 __author__ = "SafeClaw Contributors"
 
 from safeclaw.core.engine import SafeClaw

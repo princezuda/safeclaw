@@ -43,7 +43,11 @@ apis:
   newsapi: ""  # For news in briefings
 
 # ─────────────────────────────────────────────────────────────────────────────
-# AI Providers - Multiple providers can be configured simultaneously.
+# AI Providers - Optional. Only needed for AI-powered blogging.
+# Deterministic blogging (no AI) works without any provider configured.
+# See the Blogging Guide in README.md for full setup instructions.
+#
+# Multiple providers can be configured simultaneously.
 # The first enabled provider becomes the active/default one.
 # Switch at runtime with: switch ai provider <label>
 #
@@ -131,8 +135,10 @@ ai_providers:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Publishing Targets - Where to publish blog posts.
-# Multiple targets can be active. Publish to all with: publish blog to all
+# Optional. Without targets, blogs are saved as local .txt files.
+# See the Blogging Guide in README.md for full setup instructions.
 #
+# Multiple targets can be active. Publish to all with: publish blog to all
 # Supported types: wordpress, joomla, sftp, api
 # ─────────────────────────────────────────────────────────────────────────────
 publish_targets:
