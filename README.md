@@ -2,7 +2,7 @@
 
 **The zero-cost alternative to OpenClaw. No LLM. No API bills. No prompt injection. Runs on any machine.**
 
-> **50 STARS** — We hit fifty stars on GitHub! Every huge milestone we add something new. This time: **Blog without a language model.** Write blog news, crawl sites for content, and SafeClaw generates your titles using extractive summarization. No AI. Just math. [See below.](#-blog-without-a-language-model-50-star-milestone) Next milestone: **100 stars.**
+> **50 STARS** — We hit fifty stars on GitHub! Every huge milestone we add something new. This time: **Blogging — two modes.** Deterministic blogging (no AI, just extractive summarization) and optional AI-powered blogging with 11 providers (5 local, 6 cloud). Publish to WordPress, Joomla, SFTP, or any API. [See the Blogging Guide.](#blogging-guide) Next milestone: **100 stars.**
 
 While OpenClaw users are burning [$200/day](https://www.notebookcheck.net/Free-to-use-AI-tool-can-burn-through-hundreds-of-Dollars-per-day-OpenClaw-has-absurdly-high-token-use.1219925.0.html) and [$3,600/month](https://dev.to/thegdsks/i-tried-the-free-ai-agent-with-124k-github-stars-heres-my-500-reality-check-2885) on API tokens, SafeClaw delivers 90% of the functionality using traditional programming — rule-based parsing, ML pipelines, and local-first tools. **Your API bill: $0. Forever.**
 
@@ -15,7 +15,7 @@ SafeClaw uses VADER, spaCy, sumy, YOLO, Whisper, Piper, and other battle-tested 
 | | SafeClaw | OpenClaw |
 |---|---|---|
 | **Monthly cost** | **$0** | $100–$3,600+ |
-| **Requires LLM** | No | Yes |
+| **Requires LLM** | No (optional for AI blog) | Yes |
 | **Prompt injection risk** | **None** | Yes |
 | **Works offline** | **Yes** (core features) | No |
 | **Runs on any machine** | **Yes** (Linux, macOS, Windows) | Needs powerful hardware or cloud APIs |
@@ -105,12 +105,27 @@ SafeClaw uses VADER, spaCy, sumy, YOLO, Whisper, Piper, and other battle-tested 
 ### 🥚 Easter Eggs
 * Built-in personality and hidden surprises — because tools should be fun
 
-### 📝 Blog without a Language Model (50-star milestone)
+### 📝 Blogging — Two Modes
+
+**Deterministic Blog (No AI, No Cost):**
 * **Write blog news** — Add entries with natural language: "write blog news We shipped faster crawling today."
-* **Crawl sites for content** — "crawl https://example.com for title content", "crawl example.com for body content", "crawl example.com for non-title content"
-* **Auto-generated titles** — The most summarized, most repeated content becomes your headline. No LLM, just extractive summarization.
+* **Crawl sites for content** — "crawl https://example.com for title content", "crawl example.com for body content"
+* **Auto-generated titles** — Extractive summarization picks the most representative content as your headline. No LLM, just math.
 * **Plain .txt output** — Your blog is a simple text file you can share anywhere
-* **Natural language interface** — Just describe what you want: crawl a site for titles, write news, generate a title, publish
+
+**AI Blog (Optional, Multi-Provider):**
+* **Generate full posts from a topic** — "ai blog generate about sustainable technology"
+* **Rewrite, expand, polish** — "ai rewrite blog", "ai expand blog"
+* **AI headlines and SEO** — "ai headlines", "ai blog seo"
+* **11 providers** — 5 local (Ollama, LM Studio, llama.cpp, LocalAI, Jan) + 6 cloud (OpenAI, Anthropic, Google, Mistral, Groq, custom)
+* **Local AI = free + private** — Run Ollama or LM Studio and pay nothing
+
+**Multi-Platform Publishing:**
+* **WordPress** — REST API v2 with Application Passwords, JWT, or Basic Auth
+* **Joomla** — Web Services API (Joomla 4+)
+* **SFTP** — Upload HTML to any server
+* **Generic API** — POST JSON to any endpoint
+* **Front page management** — Set which post is the home page on any target
 
 ---
 
@@ -147,6 +162,8 @@ SafeClaw uses VADER, spaCy, sumy, YOLO, Whisper, Piper, and other battle-tested 
 | Free-form chat | ❌ | ✅ |
 | Creative writing | ❌ | ✅ |
 | Blog (no LLM) | ✅ (extractive titles) | ❌ (requires AI) |
+| Blog (AI-powered) | ✅ (optional, 11 providers) | ✅ |
+| Blog publishing (WordPress, Joomla, SFTP) | ✅ | ❌ (requires plugins) |
 | Command chaining | ✅ ("read email and remind me at 3pm") | ✅ |
 | Autonomous multi-step tasks | ❌ | ✅ |
 | Self-writing skills | ❌ | ✅ |
@@ -237,10 +254,14 @@ safeclaw --verbose
 > calendar today                    # Today's events from .ics
 > analyze sentiment of this text    # VADER sentiment analysis
 > read document.pdf                 # Extract text from documents
-> write blog news We shipped a new feature today.  # Blog entry
+> write blog news We shipped a new feature today.  # Blog entry (no AI)
 > crawl https://example.com for title content      # Crawl for blog
 > blog title                        # Generate title from entries
 > publish blog                      # Save blog as .txt
+> blog                              # Interactive blog menu (AI or manual)
+> ai blog generate about home automation            # AI writes a full post
+> ai rewrite blog                   # AI polishes your draft
+> publish blog to my-wordpress      # Publish to WordPress
 > help
 ```
 
@@ -275,13 +296,26 @@ safeclaw calendar import --file calendar.ics
 safeclaw calendar today
 safeclaw calendar upcoming --days 14
 
-# Blog (50-star milestone)
+# Blog — Deterministic (no AI)
 safeclaw blog help                 # Blog feature guide
 safeclaw blog write "New crawling features shipped today."
 safeclaw blog show                 # View draft and published posts
 safeclaw blog title                # Generate title from entries
 safeclaw blog publish              # Save blog as .txt
 safeclaw blog publish "My Custom Title"  # Publish with custom title
+
+# Blog — AI-powered (requires ai_providers in config)
+safeclaw blog                      # Interactive menu (AI or manual)
+# ai blog generate about <topic>   # AI writes a full blog post
+# ai rewrite blog                  # AI polishes your draft
+# ai expand blog                   # AI makes it longer
+# ai headlines                     # AI generates headline options
+# ai blog seo                      # AI generates SEO metadata
+
+# Publishing (requires publish_targets in config)
+# publish blog to my-wordpress     # Publish to a specific target
+# publish blog to all              # Publish to all targets
+# set front page 123 on my-wp     # Set home page on a target
 
 # Webhooks
 safeclaw webhook --port 8765
@@ -325,40 +359,275 @@ actions:
 
 ---
 
+## Blogging Guide
+
+SafeClaw has two blogging modes. You can use either or both.
+
+### Mode 1: Deterministic Blog (No AI)
+
+Write entries manually, crawl websites for content, and let SafeClaw generate titles using extractive summarization (LexRank, TextRank, LSA, Luhn). No API keys, no cost, fully offline.
+
+**Setup:** None — works out of the box.
+
+```
+> write blog news We shipped faster crawling today.
+  Added entry (1 total).
+
+> crawl https://example.com for title content
+  Extracted 3 titles, added to draft.
+
+> blog title
+  Generated: "Faster Crawling Ships Today"
+
+> publish blog
+  Saved: 2026-02-24-faster-crawling-ships-today.txt
+```
+
+**Commands:**
+
+| Command | Description |
+|---|---|
+| `write blog news <content>` | Add a manual entry to your draft |
+| `crawl <url> for title content` | Extract page headings into draft |
+| `crawl <url> for body content` | Extract main body text into draft |
+| `crawl <url> for non-title content` | Extract non-heading text into draft |
+| `blog title` | Generate a title using extractive summarization |
+| `show blog` | View your draft and published posts |
+| `edit blog <new content>` | Replace draft content |
+| `publish blog` | Save as `.txt` locally |
+| `publish blog My Custom Title` | Save with a custom title |
+
+### Mode 2: AI Blog (Optional)
+
+AI generates full blog posts from a topic. You can rewrite, expand, generate headlines, and produce SEO metadata. Supports 11 providers — 5 local (free) and 6 cloud (API key required).
+
+**Setup:**
+
+1. **Choose a provider.** For free/private, use a local provider. For quality/speed, use a cloud provider.
+
+2. **Configure it in `config/config.yaml`** under `ai_providers`. Uncomment and fill in one or more:
+
+**Local AI (free, private, no API key):**
+
+```yaml
+ai_providers:
+  # Ollama — easiest local option
+  - label: "local-ollama"
+    provider: "ollama"
+    model: "llama3.1"
+    endpoint: "http://localhost:11434/api/chat"
+
+  # LM Studio — GUI app with model browser
+  # - label: "local-lmstudio"
+  #   provider: "lm_studio"
+  #   model: "local-model"
+  #   endpoint: "http://localhost:1234/v1/chat/completions"
+
+  # llama.cpp — high-performance C++ inference
+  # - label: "local-llamacpp"
+  #   provider: "llamacpp"
+  #   model: "local-model"
+  #   endpoint: "http://localhost:8080/v1/chat/completions"
+
+  # Jan — user-friendly desktop app
+  # - label: "local-jan"
+  #   provider: "jan"
+  #   model: "llama3.1-8b"
+  #   endpoint: "http://localhost:1337/v1/chat/completions"
+```
+
+**Cloud AI (API key required):**
+
+```yaml
+ai_providers:
+  # OpenAI
+  - label: "openai"
+    provider: "openai"
+    api_key: "sk-..."              # https://platform.openai.com/api-keys
+    model: "gpt-4o"
+
+  # Anthropic (Claude)
+  # - label: "anthropic"
+  #   provider: "anthropic"
+  #   api_key: "sk-ant-..."        # https://console.anthropic.com/settings/keys
+  #   model: "claude-sonnet-4-20250514"
+
+  # Google Gemini
+  # - label: "google"
+  #   provider: "google"
+  #   api_key: "AI..."             # https://aistudio.google.com/apikey
+  #   model: "gemini-1.5-flash"
+
+  # Mistral
+  # - label: "mistral"
+  #   provider: "mistral"
+  #   api_key: "..."               # https://console.mistral.ai/api-keys
+  #   model: "mistral-large-latest"
+
+  # Groq (fast inference)
+  # - label: "groq"
+  #   provider: "groq"
+  #   api_key: "gsk_..."           # https://console.groq.com/keys
+  #   model: "llama-3.1-70b-versatile"
+```
+
+3. **Install the local AI server** (if using local):
+
+```bash
+# Ollama (recommended — one command)
+curl -fsSL https://ollama.com/install.sh | sh
+ollama pull llama3.1
+
+# LM Studio — download from https://lmstudio.ai
+# Jan — download from https://jan.ai
+# llama.cpp — git clone https://github.com/ggerganov/llama.cpp && make
+```
+
+4. **Use it:**
+
+```
+> blog
+  1. AI Blog for You (Recommended) [ollama/llama3.1]
+  2. Manual Blogging (No AI)
+
+> 1
+  What should the blog post be about?
+
+> sustainable technology trends in 2026
+  AI-Generated Blog Post
+  Provider: ollama/llama3.1 (847 tokens)
+  ---
+  [full article here]
+  ---
+  What would you like to do?
+    edit blog <changes>     - Replace with your edits
+    ai rewrite blog         - Have AI polish/rewrite it
+    ai expand blog          - Have AI make it longer
+    publish blog            - Save as .txt locally
+    publish blog to <target>- Publish to WordPress/Joomla/SFTP
+```
+
+**AI Commands:**
+
+| Command | Description |
+|---|---|
+| `blog` | Interactive menu — choose AI or manual |
+| `ai blog generate about <topic>` | Generate a full blog post from a topic |
+| `ai rewrite blog` | Rewrite/polish your current draft |
+| `ai expand blog` | Expand short content into a longer article |
+| `ai headlines` | Generate 5 headline options for your draft |
+| `ai blog seo` | Generate SEO metadata (title, description, keywords, slug) |
+| `ai options` | Show local AI providers and install instructions |
+| `ai providers` | Show cloud AI providers and API key links |
+| `switch ai provider <label>` | Switch between configured providers at runtime |
+
+**Multiple providers:** You can configure several providers at once. The first enabled one becomes the default. Switch at runtime with `switch ai provider <label>`.
+
+### Publishing to Remote Platforms
+
+Publish your blog (from either mode) to WordPress, Joomla, any SFTP server, or a generic API endpoint.
+
+**Setup:** Add one or more targets to `config/config.yaml` under `publish_targets`:
+
+```yaml
+publish_targets:
+  # WordPress (REST API v2)
+  - label: "my-wordpress"
+    type: "wordpress"
+    url: "https://mysite.com"
+    username: "admin"
+    password: "xxxx xxxx xxxx xxxx"   # Application Password (WP Admin > Users > Profile)
+    wp_status: "publish"              # publish, draft, pending, private
+
+  # Joomla (Web Services API, Joomla 4+)
+  - label: "my-joomla"
+    type: "joomla"
+    url: "https://myjoomla.com"
+    api_key: "your-joomla-api-token"  # Joomla Admin > Users > API Token
+    joomla_category_id: 2
+
+  # SFTP (any server)
+  - label: "my-server"
+    type: "sftp"
+    sftp_host: "myserver.com"
+    sftp_user: "deploy"
+    sftp_key_path: "~/.ssh/id_rsa"
+    sftp_remote_path: "/var/www/html/blog"
+
+  # Generic API (POST JSON to any endpoint)
+  - label: "my-api"
+    type: "api"
+    url: "https://api.mysite.com/posts"
+    api_key: "your-bearer-token"
+```
+
+**Publishing commands:**
+
+| Command | Description |
+|---|---|
+| `publish blog to my-wordpress` | Publish to a specific target |
+| `publish blog to all` | Publish to all enabled targets |
+| `list publish targets` | Show configured targets |
+| `set front page <id> on <target>` | Set which post is the home page |
+| `show front page` | Show current front page setting |
+| `list pages for <target>` | List available pages/posts on a target |
+
+### Deterministic vs AI: Quick Comparison
+
+| | Deterministic | AI-Powered |
+|---|---|---|
+| **Cost** | $0 | $0 (local) or pay-per-token (cloud) |
+| **Privacy** | Fully local | Local AI = local; cloud = data sent to provider |
+| **Titles** | Extractive summarization | LLM-generated |
+| **Content** | Manual writing + crawling | LLM generates from topic |
+| **Speed** | Instant | Seconds (local) to seconds (cloud) |
+| **Determinism** | 100% reproducible | Varies by model/temperature |
+| **Setup** | None | Install local AI or add cloud API key |
+
+---
+
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                           SAFECLAW                                   │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐  │
-│  │  CHANNELS   │  │   ACTIONS   │  │  TRIGGERS   │  │    CORE    │  │
-│  ├─────────────┤  ├─────────────┤  ├─────────────┤  ├────────────┤  │
-│  │ • CLI       │  │ • Files     │  │ • Cron      │  │ • Analyzer │  │
-│  │ • Telegram  │  │ • Shell     │  │ • Webhooks  │  │ • Documents│  │
-│  │ • Webhooks  │  │ • Crawl     │  │ • Watchers  │  │ • Notify   │  │
-│  │ • Discord   │  │ • Summarize │  │ • Events    │  │ • Feeds    │  │
-│  └─────────────┘  │ • Reminder  │  └─────────────┘  │ • Crawler  │  │
-│                   │ • Briefing  │                   │ • Summary  │  │
-│  ┌─────────────┐  │ • News/RSS  │  ┌─────────────┐  │ • Voice    │  │
-│  │   VOICE     │  │ • Email     │  │  DEVICES    │  │ • Social   │  │
-│  ├─────────────┤  │ • Calendar  │  ├─────────────┤  └────────────┘  │
-│  │ • Whisper   │  │ • Social    │  │ • Bluetooth │                  │
-│  │ • Piper TTS │  └─────────────┘  │ • Network   │                  │
-│  └─────────────┘                   │ • Smart Home│                  │
-│                                    └─────────────┘                  │
-│                                                                      │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │                  COMMAND PARSER                                │  │
-│  │   Keyword + Regex + Fuzzy Match + Date Parser + NLP           │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-│                                                                      │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │                  MEMORY (SQLite)                               │  │
-│  │   History • Preferences • Reminders • Cache • Events          │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│                               SAFECLAW                                     │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐  ┌────────────┐      │
+│  │  CHANNELS   │  │   ACTIONS   │  │  TRIGGERS    │  │    CORE    │      │
+│  ├─────────────┤  ├─────────────┤  ├──────────────┤  ├────────────┤      │
+│  │ • CLI       │  │ • Blog ──────────────────────────▸ AI Writer  │      │
+│  │ • Telegram  │  │ • Files     │  │ • Cron       │  │ • Analyzer │      │
+│  │ • Webhooks  │  │ • Shell     │  │ • Webhooks   │  │ • Documents│      │
+│  │ • Discord   │  │ • Crawl     │  │ • Watchers   │  │ • Notify   │      │
+│  └─────────────┘  │ • Summarize │  │ • Events     │  │ • Feeds    │      │
+│                   │ • Reminder  │  └──────────────┘  │ • Crawler  │      │
+│  ┌─────────────┐  │ • Briefing  │                    │ • Summary  │      │
+│  │   VOICE     │  │ • News/RSS  │  ┌──────────────┐  │ • Voice    │      │
+│  ├─────────────┤  │ • Email     │  │  DEVICES     │  │ • Social   │      │
+│  │ • Whisper   │  │ • Calendar  │  ├──────────────┤  └────────────┘      │
+│  │ • Piper TTS │  │ • Social    │  │ • Bluetooth  │                      │
+│  └─────────────┘  └──────┬──────┘  │ • Network    │  ┌────────────┐      │
+│                          │         │ • Smart Home │  │ AI WRITER  │      │
+│                          │         └──────────────┘  ├────────────┤      │
+│                          │                           │ Local:     │      │
+│                          ▼                           │ • Ollama   │      │
+│  ┌─────────────────────────────────────────────┐     │ • LM Studio│      │
+│  │              BLOG PUBLISHER                  │     │ • llama.cpp│      │
+│  │  WordPress • Joomla • SFTP • Generic API     │     │ Cloud:     │      │
+│  │  Front page management across all targets    │     │ • OpenAI   │      │
+│  └─────────────────────────────────────────────┘     │ • Anthropic│      │
+│                                                       │ • Google   │      │
+│  ┌─────────────────────────────────────────────────┐  │ • Mistral  │      │
+│  │                  COMMAND PARSER                   │  │ • Groq     │      │
+│  │   Keyword + Regex + Fuzzy Match + Date Parser    │  └────────────┘      │
+│  └─────────────────────────────────────────────────┘                       │
+│                                                                            │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                  MEMORY (SQLite)                                     │   │
+│  │   History • Preferences • Reminders • Cache • Events • Blog Drafts  │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+└────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -473,6 +742,8 @@ src/safeclaw/plugins/
 * You want voice control without paying for ElevenLabs
 * You need social media monitoring without the doomscroll
 * You want smart home and Bluetooth control in one tool
+* You want AI blogging with your choice of provider (or no AI at all)
+* You want to publish to WordPress, Joomla, or any server from the CLI
 * You don't need free-form AI conversation
 
 **Stick with OpenClaw if:**
@@ -529,7 +800,7 @@ Contributions welcome! Areas we'd love help with:
 * [feedparser](https://github.com/kurtmckee/feedparser) — RSS/Atom feed parsing
 * [dateparser](https://github.com/scrapinghub/dateparser) — Natural language date parsing
 * [rapidfuzz](https://github.com/maxbachmann/RapidFuzz) — Fast fuzzy matching
-* [httpx](https://github.com/encode/httpx) — Async HTTP client
+* [httpx](https://github.com/encode/httpx) — Async HTTP client (AI providers, publishing)
 * [FastAPI](https://fastapi.tiangolo.com/) — Webhook server
 * [Rich](https://github.com/Textualize/rich) — Beautiful CLI output
 * [PyMuPDF](https://pymupdf.readthedocs.io/) — PDF parsing
@@ -538,6 +809,8 @@ Contributions welcome! Areas we'd love help with:
 * [desktop-notifier](https://github.com/samschott/desktop-notifier) — Cross-platform notifications
 * [spaCy](https://spacy.io/) — Named entity recognition
 * [YOLO](https://github.com/ultralytics/ultralytics) — Object detection
+* [Ollama](https://ollama.com/) — Local AI inference (optional, for AI blogging)
+* [LM Studio](https://lmstudio.ai/) — Desktop AI model runner (optional)
 
 ---
 

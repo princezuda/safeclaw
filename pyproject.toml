@@ -1,7 +1,7 @@
 [project]
 name = "safeclaw"
-version = "0.2.1"
-description = "A privacy-first personal automation assistant - no GenAI required"
+version = "0.2.2"
+description = "A privacy-first personal automation assistant - no GenAI required, optional AI blogging"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
