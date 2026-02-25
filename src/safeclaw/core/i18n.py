@@ -14,8 +14,6 @@ Supported languages (add more by extending LANGUAGE_PACK):
 
 from __future__ import annotations
 
-from typing import Any
-
 # ---------------------------------------------------------------------------
 # Type alias for a single language pack.
 # Each language pack maps intent names to:

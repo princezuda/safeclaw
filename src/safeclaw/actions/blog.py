@@ -885,7 +885,7 @@ class BlogAction(BaseAction):
             for p in providers:
                 active = " (ACTIVE)" if p["active"] else ""
                 lines.append(f"  - {p['label']}{active}")
-            lines.append(f"\nUse: switch ai provider <label>")
+            lines.append("\nUse: switch ai provider <label>")
             return "\n".join(lines)
 
         if self.ai_writer.set_active_provider(label):
