@@ -7,6 +7,7 @@ No GenAI needed! Uses:
 - Slot filling (dates, times, entities)
 - Fuzzy matching for typo tolerance
 - User-learned patterns from corrections
+- Multilingual command understanding (deterministic, no AI)
 """
 
 import logging
@@ -17,6 +18,12 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import dateparser
 from rapidfuzz import fuzz
+
+from safeclaw.core.i18n import (
+    LANGUAGE_PACK,
+    get_language_name,
+    get_supported_languages,
+)
 
 if TYPE_CHECKING:
     from safeclaw.core.memory import Memory
@@ -219,6 +226,11 @@ class CommandParser:
         self.intents: dict[str, IntentPattern] = {}
         self.memory = memory
         self._learned_patterns_cache: dict[str, list[dict]] = {}
+        self._loaded_languages: list[str] = ["en"]
+        # Instance-level copy so load_language() doesn't mutate the global
+        self._phrase_variations: dict[str, list[str]] = {
+            k: list(v) for k, v in PHRASE_VARIATIONS.items()
+        }
         self._setup_default_intents()
 
     def _setup_default_intents(self) -> None:
@@ -572,6 +584,80 @@ class CommandParser:
         for intent in default_intents:
             self.register_intent(intent)
 
+    # ------------------------------------------------------------------
+    # Multilingual support
+    # ------------------------------------------------------------------
+
+    def load_language(self, lang: str) -> None:
+        """
+        Load a language pack, merging translated keywords and phrases
+        into the existing English intents.
+
+        Keywords are appended to each IntentPattern.keywords list.
+        Phrases are appended to PHRASE_VARIATIONS for fuzzy matching.
+
+        Args:
+            lang: ISO 639-1 language code (e.g. "es", "fr", "de").
+        """
+        if lang == "en":
+            return  # English is always loaded
+        if lang in self._loaded_languages:
+            logger.debug(f"Language already loaded: {lang}")
+            return
+
+        pack = LANGUAGE_PACK.get(lang)
+        if pack is None:
+            supported = ", ".join(get_supported_languages())
+            logger.warning(
+                f"Unsupported language '{lang}'. Supported: {supported}"
+            )
+            return
+
+        added_keywords = 0
+        added_phrases = 0
+
+        for intent_name, translation in pack.items():
+            # Merge keywords into IntentPattern
+            if intent_name in self.intents:
+                new_kw = translation.get("keywords", [])
+                existing = set(self.intents[intent_name].keywords)
+                for kw in new_kw:
+                    if kw not in existing:
+                        self.intents[intent_name].keywords.append(kw)
+                        added_keywords += 1
+
+            # Merge phrases into instance-level phrase variations
+            new_phrases = translation.get("phrases", [])
+            if new_phrases:
+                if intent_name not in self._phrase_variations:
+                    self._phrase_variations[intent_name] = []
+                existing_phrases = set(self._phrase_variations[intent_name])
+                for phrase in new_phrases:
+                    if phrase not in existing_phrases:
+                        self._phrase_variations[intent_name].append(phrase)
+                        added_phrases += 1
+
+        self._loaded_languages.append(lang)
+        lang_name = get_language_name(lang)
+        logger.info(
+            f"Loaded language {lang_name}: "
+            f"+{added_keywords} keywords, +{added_phrases} phrases"
+        )
+
+    def load_languages(self, languages: list[str]) -> None:
+        """
+        Load multiple language packs at once.
+
+        Args:
+            languages: List of ISO 639-1 language codes.
+        """
+        for lang in languages:
+            self.load_language(lang)
+
+    def get_loaded_languages(self) -> list[str]:
+        """Return the list of currently loaded language codes."""
+        return list(self._loaded_languages)
+
     def register_intent(self, pattern: IntentPattern) -> None:
         """Register a new intent pattern."""
         self.intents[pattern.intent] = pattern
@@ -633,7 +719,12 @@ class CommandParser:
         return result
 
     def _match_keywords(self, text: str) -> tuple[str, float] | None:
-        """Match text against intent keywords using fuzzy matching."""
+        """Match text against intent keywords using fuzzy matching.
+
+        Keyword specificity (length relative to input) is factored into the
+        score so that longer, more-specific keyword matches beat shorter
+        substring hits (e.g. "nachrichten" beats "nachricht").
+        """
         best_intent = None
         best_score = 0.0
 
@@ -642,9 +733,12 @@ class CommandParser:
         for intent_name, pattern in self.intents.items():
             # Check for keyword matches
             for keyword in pattern.keywords:
-                # Exact match in text
+                # Exact match in text (substring)
                 if keyword in text:
-                    score = 0.9
+                    # Score scales with keyword specificity: longer keywords
+                    # that cover more of the input score higher (0.85 – 0.95).
+                    specificity = len(keyword) / max(len(text), 1)
+                    score = 0.85 + 0.10 * min(specificity, 1.0)
                     if score > best_score:
                         best_score = score
                         best_intent = intent_name
@@ -737,29 +831,43 @@ class CommandParser:
         Match text against common phrase variations using fuzzy matching.
 
         This provides day-one natural language understanding without training.
+        Uses instance-level phrase variations so multilingual additions are
+        isolated per parser instance.
         """
         best_intent = None
         best_score = 0.0
 
-        for intent, phrases in PHRASE_VARIATIONS.items():
+        for intent, phrases in self._phrase_variations.items():
             if intent not in self.intents:
                 continue
 
             for phrase in phrases:
                 # Check if phrase is contained in text
                 if phrase in text:
+                    # For single-word ASCII phrases, require word-boundary
+                    # match to prevent "cli" from matching inside "clima".
+                    if " " not in phrase and phrase.isascii() and len(phrase) < len(text):
+                        idx = text.index(phrase)
+                        before_ok = (idx == 0) or not text[idx - 1].isalnum()
+                        end = idx + len(phrase)
+                        after_ok = (end == len(text)) or not text[end].isalnum()
+                        if not (before_ok and after_ok):
+                            continue
+
                     score = 0.92
                     if score > best_score:
                         best_score = score
                         best_intent = intent
                     continue
 
-                # Fuzzy match - check if any part of text matches phrase
-                # Use partial_ratio for substring matching
-                ratio = fuzz.partial_ratio(phrase, text) / 100.0
-                if ratio > 0.85 and ratio > best_score:
-                    best_score = ratio
-                    best_intent = intent
+                # Fuzzy match - require text to be at least 70% as long as
+                # phrase to prevent short inputs matching inside long phrases
+                # (e.g. "help" perfectly matching inside "blog help").
+                if len(text) >= len(phrase) * 0.7:
+                    ratio = fuzz.partial_ratio(phrase, text) / 100.0
+                    if ratio > 0.85 and ratio > best_score:
+                        best_score = ratio
+                        best_intent = intent
 
         if best_intent and best_score >= 0.85:
             return (best_intent, best_score)
