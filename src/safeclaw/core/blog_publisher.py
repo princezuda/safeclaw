@@ -626,7 +626,7 @@ class BlogPublisher:
                     target_type="sftp",
                     error=f"SCP failed: {stderr.decode()[:300]}",
                 )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             return PublishResult(
                 success=False,
                 target_label=target.label,

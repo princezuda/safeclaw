@@ -3,6 +3,11 @@
 safeclaw:
   name: "SafeClaw"
   language: "en"
+  # Multilingual command understanding (deterministic, no AI).
+  # Set a single language above, or list multiple below.
+  # Commands typed in any listed language map to the same actions.
+  # Supported: en, es, fr, de, pt, it, nl, ru, zh, ja, ko, ar, tr
+  # languages: ["en", "es", "fr"]
   timezone: "UTC"
 
 # Channels

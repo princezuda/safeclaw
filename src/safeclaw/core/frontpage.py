@@ -14,7 +14,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from safeclaw.core.blog_publisher import BlogPublisher, PublishResult, PublishTarget, PublishTargetType
+from safeclaw.core.blog_publisher import (
+    BlogPublisher,
+    PublishResult,
+    PublishTarget,
+    PublishTargetType,
+)
 
 logger = logging.getLogger(__name__)
 

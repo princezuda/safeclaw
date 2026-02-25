@@ -63,6 +63,29 @@ class SafeClaw:
             logger.warning(f"Config not found at {self.config_path}, using defaults")
             self.config = self._default_config()
 
+        # Load multilingual command support
+        self._load_languages()
+
+    def _load_languages(self) -> None:
+        """Load multilingual command support from config.
+
+        Reads either ``safeclaw.languages`` (list) or ``safeclaw.language``
+        (single code) and loads the corresponding language packs into the
+        parser so commands are understood in those languages.
+        """
+        sc = self.config.get("safeclaw", {})
+
+        # Prefer explicit list: languages: ["en", "es", "fr"]
+        languages = sc.get("languages")
+
+        if languages and isinstance(languages, list):
+            self.parser.load_languages(languages)
+        else:
+            # Fall back to single language field
+            lang = sc.get("language", "en")
+            if lang and lang != "en":
+                self.parser.load_language(lang)
+
     def _default_config(self) -> dict[str, Any]:
         """Return default configuration."""
         return {

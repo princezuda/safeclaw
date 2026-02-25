@@ -44,6 +44,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest pytest-asyncio pytest-cov
           pip install httpx beautifulsoup4 lxml
+          pip install dateparser rapidfuzz
 
       - name: Run tests
         run: pytest --tb=short -q
