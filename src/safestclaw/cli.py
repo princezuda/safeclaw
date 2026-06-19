@@ -660,7 +660,11 @@ async def _crawl(
 @app.command()
 def webhook(
     port: int = typer.Option(8765, "--port", "-p", help="Port to listen on"),
-    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind to"),
+    host: str = typer.Option(
+        "127.0.0.1", "--host", "-h",
+        help="Host to bind to. Defaults to loopback; use 0.0.0.0 only "
+             "behind a reverse proxy / firewall you control.",
+    ),
     verbose: bool = typer.Option(False, "--verbose"),
 ):
     """Start the webhook server only."""
