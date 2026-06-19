@@ -731,7 +731,11 @@ async def _news(
     if add_feed:
         name = feed_name or "Custom Feed"
         console.print(f"[dim]Fetching feed: {add_feed}...[/dim]")
-        feed_reader.add_custom_feed(name, add_feed)
+        try:
+            feed_reader.add_custom_feed(name, add_feed)
+        except ValueError as e:
+            console.print(f"[red]{e}[/red]")
+            return
         items = await feed_reader.fetch_feeds(feed_reader.custom_feeds)
         if items:
             console.print(f"[green]✅ Added feed: {name} ({len(items)} items)[/green]")
