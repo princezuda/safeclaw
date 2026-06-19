@@ -114,12 +114,19 @@ class ShellAction(BaseAction):
         max_output: int = 10000,
         allowed_commands: list[str] | None = None,
         working_directory: str | None = None,
+        enforce_never_allow: bool = True,
     ):
         self.enabled = enabled
         self.sandboxed = sandboxed
         self.timeout = timeout
         self.max_output = max_output
         self.working_directory = working_directory
+        # When True (default), the NEVER_ALLOW hard blocklist of interpreters
+        # and command-runners is enforced in sandboxed mode even if they
+        # appear in a custom allowlist. Operators who deliberately need an
+        # interpreter (e.g. python) can set this False and take ownership of
+        # that risk via their own allowed_commands.
+        self.enforce_never_allow = enforce_never_allow
         if allowed_commands is not None:
             self.allowed_commands = set(allowed_commands)
         else:
@@ -147,8 +154,9 @@ class ShellAction(BaseAction):
 
         if self.sandboxed:
             # Hard block interpreters / command-runners, regardless of the
-            # configured allowlist, since they defeat it entirely.
-            if executable.lower() in self.NEVER_ALLOW:
+            # configured allowlist, since they defeat it entirely. Operators
+            # can opt out via enforce_never_allow=False.
+            if self.enforce_never_allow and executable.lower() in self.NEVER_ALLOW:
                 return (
                     False,
                     f"Command not allowed (interpreter/command-runner): "

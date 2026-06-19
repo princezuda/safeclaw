@@ -125,6 +125,18 @@ class TestShellValidation:
         is_valid, _, _ = shell._validate_command("ls -la")
         assert is_valid
 
+    def test_never_allow_can_be_disabled(self):
+        """enforce_never_allow=False lets operators opt interpreters back in."""
+        shell = self._get_shell(
+            allowed_commands=["python3", "ls"],
+            enforce_never_allow=False,
+        )
+        is_valid, _, _ = shell._validate_command("python3 -c 'print(1)'")
+        assert is_valid
+        # Still gated by the allowlist: commands not listed are rejected.
+        is_valid, _, _ = shell._validate_command("bash -c id")
+        assert not is_valid
+
     def test_blocked_find_exec(self):
         """find is allowed, but its -exec family is an escape hatch."""
         shell = self._get_shell(sandboxed=True)

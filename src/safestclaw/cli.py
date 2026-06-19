@@ -126,7 +126,16 @@ def create_engine(config_path: Path | None = None) -> SafestClaw:
 
     # Register default actions
     files_action = FilesAction()
-    shell_action = ShellAction()
+    _shell_cfg = (engine.config.get("actions") or {}).get("shell") or {}
+    shell_action = ShellAction(
+        enabled=_shell_cfg.get("enabled", True),
+        sandboxed=_shell_cfg.get("sandboxed", True),
+        allowed_commands=_shell_cfg.get("allowed_commands"),
+        working_directory=_shell_cfg.get("working_directory"),
+        # Defaults to True (interpreters/command-runners hard-blocked).
+        # Set actions.shell.enforce_never_allow: false to opt out.
+        enforce_never_allow=_shell_cfg.get("enforce_never_allow", True),
+    )
     summarize_action = SummarizeAction()
     crawl_action = CrawlAction()
     reminder_action = ReminderAction()
